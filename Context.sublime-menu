@@ -1,0 +1,12 @@
+[
+  {
+    "caption": "SLIMS",
+    "id": "slims",
+    "children": [
+      {
+        "caption": "Test",
+        "command": "zucker"
+      },
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+{
+	"lisp_command" : "ccl",
+	"slime_path" : "~/Library/SLIME",
+	"startup_start": false,
+	"advanced_settings": {
+		"show_swank_debug" : false,
+		"connexion_attempts": 5,
+		"swank_command": 5,
+		"swank_hostname": "localhost",
+		"swank_port": 4005
+	}
+}
