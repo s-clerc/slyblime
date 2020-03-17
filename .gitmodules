@@ -1,0 +1,9 @@
+[submodule "cl4py"]
+	path = cl4py
+	url = https://github.com/marcoheisig/cl4py
+[submodule "swank-client"]
+	path = swank-client
+	url = https://github.com/brown/swank-client
+[submodule "base"]
+	path = base
+	url = https://github.com/brown/base
