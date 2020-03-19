@@ -2,12 +2,15 @@ from typing import Dict, Any
 
 from pydispatch import Dispatcher
 
-import socket
-import asyncore
-from promise import Promise
+# import socket
+# import asyncore
+# from promise import Promise
+import asyncio
 from hy.lex import hy_parse
+from sexpdata import loads
 from collections import namedtuple
 from queue import Queue
+import threading
 
 DebugEventData = namedtuple("DebugEventData",
                             ["thread",
@@ -20,15 +23,9 @@ DebugEventData = namedtuple("DebugEventData",
 
 PromisedRequest = namedtuple("RequestData",
                              ["id",
-                          "command",
-                          "package",
-                          "resolve"])
-
-QueuedRequest = namedtuple("QueuedRequest",
-                           ["id",
-                            "command",
-                            "package",
-                            "thread"])
+                              "command",
+                              "package",
+                              "future"])
 
 
 class SwankClientProtocol(Dispatcher, asyncio.Protocol):
@@ -49,14 +46,16 @@ class SwankClientProtocol(Dispatcher, asyncio.Protocol):
         packet_size = int(data[0:6].decode("utf-8"), 16)
         print(packet_size)
         print(data)
-        self.emit("reception", data[6:packet_size+6])
-        remainder = data[packet_size:]
+        self.emit("reception", data[6:packet_size + 6])
+        remainder = data[packet_size + 6:]
         if len(remainder) > 5:
+            print("Remainder: ")
+            print(remainder)
             self.data_received(remainder)
 
     def write(self, message):
         output = message.encode("utf-8")
-        length = str(hex(len(message)))[2:].zfill(6)
+        length = str(hex(len(output)))[2:].zfill(6).upper()
         buffer = length.encode("utf-8") + output + "\n".encode("utf-8")
         self.transport.write(buffer)
         print(buffer)
@@ -90,16 +89,26 @@ class SwankClient(Dispatcher):
         self.request_table = {}
         self.output_buffer = "".encode("utf-8")
         self.rex_queue = Queue()
+        self.loop = None
         # setup_read(6, header_complete_callback)
 
-    def connect(self):
-        loop = asyncio.get_event_loop()
+    async def connect(self, *args):
+        if len(args) > 0:
+            self.loop = args[0]
+        else:
+            self.loop = asyncio.new_event_loop()
+            threading.Thread(target=self.loop.run_forever)
         self.connexion = SwankClientProtocol()
         self.connexion.bind(connect=self.handle_connect,
-                      disconnect=self.handle_close,
-                      reception=self.handle_read)
-        yield from loop.create_connection(lambda: self.connexion,
-                                                self.host, self.port)
+                            disconnect=self.handle_close,
+                            reception=self.handle_read)
+        await self.loop.create_connection(lambda: self.connexion,
+                                          self.host, self.port)
+        self.closed_future = self.loop.create_future()
+
+    async def closed(self):
+        await self.closed_future
+        return self.closed_future.result()
 
     def setup_read(self, length, callback):
         pass
@@ -113,21 +122,19 @@ class SwankClient(Dispatcher):
     def send_message(self, message):
         self.connexion.write(message)
 
-    ## Asyncore stuff
     def handle_connect(self):
         self.connected = True
         self.emit("connect")
 
-    def handle_close(self):
+    def handle_close(self, something):
         if self.connected:
             self.connected = False
+            self.closed_future.set_result(True)
             self.emit("disconnect")
 
     def handle_read(self, data):
         print(data)
-        abstract_syntax_tree = hy_parse(data.decode("utf-8"))
-        if len(abstract_syntax_tree) < 2: return
-        expression = abstract_syntax_tree[1]
+        expression = loads(data.decode("utf-8"))
         command = str(expression[0]).lower()[1:]  # This should be a keyword symbol
         if command == "return":
             print("return reception")
@@ -173,63 +180,66 @@ class SwankClient(Dispatcher):
             int(expression[2])
         ))
 
-    def debug_invoke_restart(self, level, restart, thread, *args):
+    async def debug_invoke_restart(self, level, restart, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
         command = "SWANK:INVOKE-NTH-RESTART-FOR-EMACS " + str(level) \
                   + " " + str(restart)
-        return self.rex(command, thread, package)
+        result = await self.rex(command, thread, package)
+        return result
 
-    def debug_escape_all(self, thread, *args):
+    async def debug_escape_all(self, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        return self.rex("SWANK:THROW-TO-TOPLEVEL", thread, package)
+        result = await self.rex("SWANK:THROW-TO-TOPLEVEL", thread, package)
+        return result
 
-    def debug_continue(self, thread, *args):
+    async def debug_continue(self, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        return self.rex("SWANK:SLDB-CONTINUE", thread, package)
+        result = await self.rex("SWANK:SLDB-CONTINUE", thread, package)
+        return result
 
-   def debug_abort_current_level(self, level, thread, *args):
+    async def debug_abort_current_level(self, level, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
         if level == 1:
-            return self.debug_escape_all(thread, package)
+            result = await self.debug_escape_all(thread, package)
         else:
-            return self.rex("SWANK:SLDB-ABORT", thread, package)
+            result = await self.rex("SWANK:SLDB-ABORT", thread, package)
+        return result
 
-
-    def rex(self, command, thread, *args):
+    async def rex(self, command, thread, *args):
         print("do rex")
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
         id = self.request_counter
         self.request_counter += 1
         message = "(:EMACS-REX (" + command + ") \"" + package + "\" " + str(thread) + " " + str(id) + ")"
-        resolve_function = None
-        def resolver(resolve, reject):
-            nonlocal resolve_function
-            resolve_function = resolve
-            self.send_message(message)
-        promise = Promise(resolver)
-        request = PromisedRequest(self.request_counter, command, package, resolve_function)
+        self.send_message(message)
+        # This future will be returned when emacs returns.
+        future = self.loop.create_future()
+        request = PromisedRequest(id, command, package, future)
         self.request_table[request.id] = request
-        return promise
+        await future
+        return future.result()
 
     def rex_return_handler(self, expression):
         status = str(expression[1][0]).lower()
         return_value = expression[1][1]
         id = int(expression[2])
         if id in self.request_table:
-            print("Promise fulfilled for" + str(request))
             request = self.request_table[id]
+            print("Promise fulfilled for" + str(request))
             del self.request_table[id]
-            request.resolve(return_value)
+            if request.future.cancelled(): return
+            request.future.set_result(return_value)
         else:
             print(str(self.request_table))
             print(f"Danger, recieved rex response for unknown command id {id}")
 
-   def eval(self, expression_string, *args):
+    async def eval(self, expression_string, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
         command = "SWANK-REPL:LISTENER-EVAL " + expression_string
-        return self.rex(command, ":REPL-THREAD", package)
+        result = await self.rex(command, ":REPL-THREAD", package)
+        return result
 
-    def prepare_swank(self):
+    async def prepare_swank(self):
         print("now prep")
         command = """
             SWANK:SWANK-REQUIRE '(SWANK-IO-PACKAGE::SWANK-TRACE-DIALOG 
@@ -241,15 +251,12 @@ class SwankClient(Dispatcher):
                                   SWANK-IO-PACKAGE::SWANK-ARGLISTS
                                   SWANK-IO-PACKAGE::SWANK-REPL)
         """
-        self.rex(command, "T").then(
-            lambda x: (
-                print("First done"),
-                self.rex("SWANK:INIT-PRESENTATIONS", "T")
-            )).then(
-            lambda x: (
-                print("second done"),
-                self.rex("SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "COMMON-LISP-USER", T)
-            )).then(lambda x: print("third done"))
+        # await self.rex(command, "T")
+        print("First done")
+        # await self.rex("SWANK:INIT-PRESENTATIONS", "T")
+        # print("second done")
+        # await self.rex("SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
+        print("third done")
         return
 
 
@@ -282,16 +289,19 @@ class TestListener():
         print("debug R")
 
 
-def main():
+async def main(x):
     print("main")
-    x = SwankClient("localhost", 4005)
-    y = TestListener(x)
-    await x.connect()
+    await x.connect(asyncio.get_event_loop())
     await x.prepare_swank()
+    await x.closed()
     # x.eval("(+ 2 2)")
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    loop.close()
+    PYTHONASYNCIODEBUG = 1
+    loop = asyncio.new_event_loop()
+    x = SwankClient("localhost", 4005)
+    y = TestListener(x)
+    loop.create_task(main(x))
+    threading.Thread(target=loop.run_forever).start()
+    print("Anyways")
