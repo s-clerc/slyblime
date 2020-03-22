@@ -56,7 +56,7 @@ class SwankClientProtocol(Dispatcher, asyncio.Protocol):
     def write(self, message):
         output = message.encode("utf-8")
         length = str(hex(len(output)))[2:].zfill(6).upper()
-        buffer = length.encode("utf-8") + output + "\n".encode("utf-8")
+        buffer = length.encode("utf-8") + output #+ "\n".encode("utf-8")
         self.transport.write(buffer)
         print(buffer)
 
@@ -241,28 +241,27 @@ class SwankClient(Dispatcher):
 
     async def prepare_swank(self):
         print("now prep")
-        command = """
-            SWANK:SWANK-REQUIRE '(SWANK-IO-PACKAGE::SWANK-TRACE-DIALOG 
-                                  SWANK-IO-PACKAGE::SWANK-PACKAGE-FU
-                                  SWANK-IO-PACKAGE::SWANK-PRESENTATIONS
-                                  SWANK-IO-PACKAGE::SWANK-FUZZY
-                                  SWANK-IO-PACKAGE::SWANK-FANCY-INSPECTOR
-                                  SWANK-IO-PACKAGE::SWANK-C-P-C
-                                  SWANK-IO-PACKAGE::SWANK-ARGLISTS
-                                  SWANK-IO-PACKAGE::SWANK-REPL)
-        """
-        # await self.rex(command, "T")
+        command = "SWANK:SWANK-REQUIRE '(SWANK-IO-PACKAGE::SWANK-TRACE-DIALOG"     \
+                                      + " SWANK-IO-PACKAGE::SWANK-PACKAGE-FU"      \
+                                      + " SWANK-IO-PACKAGE::SWANK-PRESENTATIONS"   \
+                                      + " SWANK-IO-PACKAGE::SWANK-FUZZY"           \
+                                      + " SWANK-IO-PACKAGE::SWANK-FANCY-INSPECTOR" \
+                                      + " SWANK-IO-PACKAGE::SWANK-C-P-C"           \
+                                      + " SWANK-IO-PACKAGE::SWANK-ARGLISTS"        \
+                                      + " SWANK-IO-PACKAGE::SWANK-REPL)"
+        await self.rex(command, "T")
         print("First done")
-        # await self.rex("SWANK:INIT-PRESENTATIONS", "T")
-        # print("second done")
-        # await self.rex("SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
+        await self.rex("SWANK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
+        print("second done")
+        await self.rex("SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         print("third done")
         return
 
 
 class TestListener():
-    def __init__(self, client: SwankClient):
+    def __init__(self, client: SwankClient, loop):
         self.client = client
+        self.loop = loop
         client.bind(connect=self.on_connect,
                     disconnect=self.on_disconnect,
                     debug_setup=self.on_debug_setup,
@@ -283,7 +282,7 @@ class TestListener():
         print("debug A")
         r = self.debug_data.restarts
         print(r[len(r) - 1])
-        self.client.debug_invoke_restart(self.debug_data.level, len(r) - 1, self.debug_data.thread)
+        self.loop.create_task(self.client.debug_invoke_restart(self.debug_data.level, len(r) - 1, self.debug_data.thread))
 
     def on_debug_return(self, data):
         print("debug R")
@@ -301,7 +300,7 @@ if __name__ == '__main__':
     PYTHONASYNCIODEBUG = 1
     loop = asyncio.new_event_loop()
     x = SwankClient("localhost", 4005)
-    y = TestListener(x)
+    y = TestListener(x, loop)
     loop.create_task(main(x))
     threading.Thread(target=loop.run_forever).start()
     print("Anyways")
