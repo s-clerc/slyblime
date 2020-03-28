@@ -143,7 +143,7 @@ class SwankClient(Dispatcher):
     request_table: Dict[int, PromisedRequest]
     _events_ = [
         "connect",
-        "print_string",
+        "write_string",
         "presentation_start",
         "presentation_end",
         "new_package",
@@ -214,7 +214,7 @@ class SwankClient(Dispatcher):
             print("return reception")
             self.rex_return_handler(expression)
         elif command == "write-string":
-            self.emit("print_string", parameter)
+            self.emit("write_string", parameter)
         elif command == "presentation-start":
             self.emit("presentation_start", parameter)
         elif command == "presentation-end":
@@ -720,7 +720,7 @@ class TestListener:
                     debug_setup=self.on_debug_setup,
                     debug_activate=self.on_debug_activate,
                     debug_return=self.on_debug_return,
-                    print_string=self.write_string,
+                    write_string=self.write_string,
                     presentation_end=self.repl)
 
     def on_connect(self):
