@@ -744,7 +744,7 @@ class TestListener:
     def on_debug_return(self, data):
         print("debug R")
 
-    def repl(self, *args):
+    def repl(self, *ARGS):
         s = input("CL-USER>")
         self.loop.create_task(self.client.eval(s))
 
