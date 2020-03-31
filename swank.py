@@ -11,21 +11,21 @@ import threading
 from dataclasses import dataclass
 from sys import maxsize
 
-DebugEventData = namedtuple("DebugEventData",
-                            ["thread",
-                             "level",
-                             "title",
-                             "type",
-                             "restarts",
-                             "stack_frames"],
-                            defaults=(None,) * 6)
+@dataclass
+class DebugEventData:
+    thread: str = None
+    level: Any = None
+    title: Any = None
+    type: Any = None
+    restarts: list = None
+    stack_frames: list = None
 
-PromisedRequest = namedtuple("RequestData",
-                             ["id",
-                              "command",
-                              "package",
-                              "future"])
-
+@dataclass
+class PromisedRequest:
+    id: int
+    command: str
+    package: str
+    future: Any
 
 @dataclass
 class StackFrameLocal:
@@ -75,7 +75,6 @@ class Location:
 class Definition:
     label: str
     location: Location
-
 
 class SwankClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
@@ -436,10 +435,10 @@ class SwankClient(Dispatcher):
             return bool(frame[2][1]) if len(frame) >= 3 else False
 
         data = DebugEventData(
-            int(expression[1]),  # Thread
-            int(expression[2]),  # Level
-            str(expression[3][0]),  # Title
-            str(expression[3][1]),  # Type
+            expression[1],  # Thread
+            expression[2],  # Level
+            expression[3][0],  # Title
+            expression[3][1],  # Type
             # Restarts
             [(str(restart[0]), str(restart[1])) for restart in expression[4]],
             # Stack frames
@@ -449,14 +448,14 @@ class SwankClient(Dispatcher):
 
     def debug_activate_handler(self, expression):
         self.emit("debug_activate", DebugEventData(
-            int(expression[1]),
-            int(expression[2])
+            expression[1],
+            expression[2]
         ))
 
     def debug_return_handler(self, expression):
         self.emit("debug_return", DebugEventData(
-            int(expression[1]),
-            int(expression[2])
+            expression[1],
+            expression[2]
         ))
 
     async def debug_invoke_restart(self, level, restart, thread, *args):
