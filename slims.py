@@ -28,10 +28,11 @@ class SlynkSession:
 
     async def connect(self):
         slynk = self.slynk
+        print("Connect called")
         self.window.status_message(f"Attempting to connect to Slynk at {slynk.host}:{slynk.port} [≈ 1 min]")
         await slynk.connect(asyncio.get_event_loop())
         await slynk.prepare()
-        await slynk.closed()
+        #await slynk.closed()
 
     def on_connect(self, *args):
         self.window.status_message("SLYNK connexion established")
@@ -54,7 +55,7 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
     def run(self, port=4005):  # implement run method
         global loop
         session = SlynkSession("localhost", port, self.window)
-        loop.create_task(session.connect())
         if not loop.is_running():
             threading.Thread(target=loop.run_forever).start()
+        asyncio.run_coroutine_threadsafe(session.connect(), loop)
         addSession(self.window.id(), session)
