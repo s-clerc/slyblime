@@ -59,3 +59,11 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
             threading.Thread(target=loop.run_forever).start()
         asyncio.run_coroutine_threadsafe(session.connect(), loop)
         addSession(self.window.id(), session)
+
+class DisconnectSlynkCommand(sublime_plugin.WindowCommand):
+    def run(self, port=4005):  # implement run method
+        global loop
+        session = getSession(self.window.id())
+        session.slynk.disconnect()
+
+#class AproposCommand(sublime_plugin.TextInputHandler):

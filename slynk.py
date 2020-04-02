@@ -742,6 +742,11 @@ class SlynkClient(Dispatcher):
         result = await self.rex("SLYNK/BACKEND:QUIT-LISP", "T")
         return result
 
+    def disconnect(self):
+        print("Disconnect called")
+        self.send_message("(:emacs-channel-send 1 (:teardown))")
+        self.loop.call_soon(self.connexion.transport.close)
+
 class TestListener:
     def __init__(self, client: SlynkClient, loop):
         self.client = client
