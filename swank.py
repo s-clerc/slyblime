@@ -4,12 +4,15 @@ from pydispatch import Dispatcher
 
 import asyncio
 
-from sexpdata import loads, dumps, Symbol
+from sexpdata import loads, dumps, Symbol, Quoted
 from collections import namedtuple
-from queue import Queue
+
 import threading
 from dataclasses import dataclass
 from sys import maxsize
+from util import *
+
+import pathlib
 
 @dataclass
 class DebugEventData:
@@ -135,7 +138,7 @@ class SwankClientProtocol(Dispatcher, asyncio.Protocol):
         length = str(hex(len(output)))[2:].zfill(6).upper()
         buffer = length.encode("utf-8") + output
         self.transport.write(buffer)
-        #print(buffer)
+        print(buffer)
 
 
 class SwankClient(Dispatcher):
@@ -167,8 +170,9 @@ class SwankClient(Dispatcher):
         self.connected = False
         self.request_counter = 1
         self.request_table = {}
+        # Channel ids seem to be from N*
+        self.channels = [None]
         self.output_buffer = "".encode("utf-8")
-        self.rex_queue = Queue()
         self.loop = None
         self.closed_future = None
         self.debug_data = None
@@ -236,8 +240,15 @@ class SwankClient(Dispatcher):
             self.read_aborted_handler(expression)
         elif command == "ping":
             self.ping_handler(expression)
+        elif command == "channel-send":
+            self.channels[parameter].message_recieved(expression[2])
         else:
             print("Danger, unknown command: " + command)
+
+    def make_channel(self):
+        id = len(self.channels)
+        self.channels.append(Channel(self, id))
+        return id, self.channels[id]
 
     # Swank data parsing
     @staticmethod
@@ -305,7 +316,7 @@ class SwankClient(Dispatcher):
     async def rex(self, command, thread, package=DEFAULT_PACKAGE):
         id = self.request_counter
         self.request_counter += 1
-        message = "(:EMACS-REX (" + command + ") \"" + package + "\" " + str(thread) + " " + str(id) + ")"
+        message = f"(:EMACS-REX ({command}) {dumps(package)} {str(thread)} {str(id)})"
         self.send_message(message)
         # This future will be returned when emacs returns.
         future = self.loop.create_future()
@@ -369,28 +380,49 @@ class SwankClient(Dispatcher):
         thread, tag = self._extract_properties(expression)
         self.emit("read_aborted", tag)
 
+    # A slyfun
+    async def require (self, modules):
+        if type(modules) != list:
+            modules = [modules] # Only one module
+        command = f"SLYNK:SLYNK-REQUIRE '{dumps(modules)}"
+        result = await self.rex(command, "T", "NIL")
+        return result
+
+    async def add_load_paths(self, paths):
+        if type(paths) != list:
+            paths = [paths]
+        command = f"SLYNK:SLYNK-ADD-LOAD-PATHS '{dumps(paths)}"
+        result = await self.rex(command, "T")
+        return result
+
     ### Higher-level commands
+    async def create_repl(self):
+        id, channel = self.make_channel()
+        repl = Repl(channel)
+        await self.rex(f"slynk-mrepl:create-mrepl {id}", "T")
+        return repl
+
     async def prepare_swank(self):
         print("now prep")
-        command = """SWANK:SWANK-REQUIRE '(SWANK-IO-PACKAGE::SWANK-TRACE-DIALOG   
-                                           SWANK-IO-PACKAGE::SWANK-PACKAGE-FU      
-                                           SWANK-IO-PACKAGE::SWANK-PRESENTATIONS  
-                                           SWANK-IO-PACKAGE::SWANK-FUZZY          
-                                           SWANK-IO-PACKAGE::SWANK-FANCY-INSPECTOR 
-                                           SWANK-IO-PACKAGE::SWANK-C-P-C           
-                                           SWANK-IO-PACKAGE::SWANK-ARGLISTS        
-                                           SWANK-IO-PACKAGE::SWANK-REPL)"""
-        await self.rex(command, "T")
-        print("First done")
-        await self.rex("SWANK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
-        print("second done")
-        await self.rex("SWANK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
-        print("third done")
+         # Missing C-P-C, Fuzzy, Presentations from SLIMA
+        await self.add_load_paths(f"{pathlib.Path().parent.absolute()}/sly/contrib/")
+        print("first done")
+        await self.require(
+            ["slynk/indentation",
+             "slynk/stickers",
+             "slynk/trace-dialog",
+             "slynk/package-fu",
+             "slynk/fancy-inspector",
+             "slynk/mrepl",
+             "slynk/arglists"])
+        print("Swank prepared")
+        #await self.rex("SLYNK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
+        #await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
 
     async def autodoc(self, expression_string, cursor_position, *args):
         expression = loads(expression_string)
-        cursor_marker = Symbol("SWANK::%CURSOR-MARKER%")
+        cursor_marker = Symbol("SLYNK::%CURSOR-MARKER%")
         try:
             output_forms = []
             is_cursor_placed = False
@@ -408,7 +440,7 @@ class SwankClient(Dispatcher):
             if not is_cursor_placed:
                 output_forms.append(cursor_marker)
 
-            command = f"SWANK:AUTODOC {dumps(output_forms)} :PRINT-RIGHT-MARGIN 80"
+            command = f"SLYNK:AUTODOC {dumps(output_forms)} :PRINT-RIGHT-MARGIN 80"
         except Exception as e:
             print("Error constructing command")
             print(e)
@@ -419,13 +451,13 @@ class SwankClient(Dispatcher):
 
     async def autocomplete(self, prefix, package):
         prefix = dumps(prefix)
-        command = f"SWANK:SIMPLE-COMPLETIONS {prefix} \"{package}\""
+        command = f"SLYNK:SIMPLE-COMPLETIONS {prefix} \"{package}\""
         response = await self.rex(command, "T", package)
         return [str(completion) for completion in response[0]] if len(response) > 0 else []
 
     async def eval(self, expression_string, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        command = f"SWANK-REPL:LISTENER-EVAL {dumps(expression_string)}"
+        command = f"SLYNK-REPL:LISTENER-EVAL {dumps(expression_string)}"
         result = await self.rex(command, ":REPL-THREAD", package)
         return result
 
@@ -460,19 +492,19 @@ class SwankClient(Dispatcher):
 
     async def debug_invoke_restart(self, level, restart, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        command = "SWANK:INVOKE-NTH-RESTART-FOR-EMACS " + str(level) \
+        command = "SLYNK:INVOKE-NTH-RESTART-FOR-EMACS " + str(level) \
                   + " " + str(restart)
         result = await self.rex(command, thread, package)
         return result
 
     async def debug_escape_all(self, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SWANK:THROW-TO-TOPLEVEL", thread, package)
+        result = await self.rex("SLYNK:THROW-TO-TOPLEVEL", thread, package)
         return result
 
     async def debug_continue(self, thread, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SWANK:SLDB-CONTINUE", thread, package)
+        result = await self.rex("SLYNK:SLY-DB-CONTINUE", thread, package)
         return result
 
     async def debug_abort_current_level(self, level, thread, *args):
@@ -480,11 +512,11 @@ class SwankClient(Dispatcher):
         if level == 1:
             result = await self.debug_escape_all(thread, package)
         else:
-            result = await self.rex("SWANK:SLDB-ABORT", thread, package)
+            result = await self.rex("SLYNK:SLY-DB-ABORT", thread, package)
         return result
 
     async def debug_get_stack_trace(self, thread, *args):
-        frames = await self.rex("SWANK:BACKTRACE 0 NIL", thread, *args)
+        frames = await self.rex("SLYNK:BACKTRACE 0 NIL", thread, *args)
         return [StackFrame(
             int(frame[0]),
             str(frame[1]),
@@ -496,7 +528,7 @@ class SwankClient(Dispatcher):
         if frame.locals is not None:
             return frame
         else:
-            response = await self.rex(f"SWANK-FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
+            response = await self.rex(f"SLYNK-FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
             frame.locals = [StackFrameLocal(
                 str(local[1]),
                 int(local[3]),
@@ -507,81 +539,81 @@ class SwankClient(Dispatcher):
             return frame
 
     async def debug_restart_frame(self, frame, thread, *args):
-        response = await self.rex(f"SWANK:RESTART-FRAME {frame}", thread, *args)
+        response = await self.rex(f"SLYNK:RESTART-FRAME {frame}", thread, *args)
         return response
 
     async def debug_return_from_frame(self, frame, value, thread, *args):
-        was_error = await self.rex(f"SWANK:SLDB-RETURN-FROM-FRAME {frame} {dumps(value)}", thread, *args)
+        was_error = await self.rex(f"SLYNK:SLY-DB-RETURN-FROM-FRAME {frame} {dumps(value)}", thread, *args)
         if bool(was_error):
             raise Exception("Lisp error while returning from frame: " + str(was_error))
 
     async def debug_frame_source(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:FRAME-SOURCE-LOCATION {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:FRAME-SOURCE-LOCATION {frame}", thread, *args)
         return self.parse_location(result)
 
     async def debug_disassemble_frame(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-DISASSEMBLE {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-DISASSEMBLE {frame}", thread, *args)
         return str(result)
 
     async def debug_eval_in_frame(self, frame, expression, thread, *args):
-        interpackage = await self.rex(f"SWANK:FRAME-PACKAGE-NAME {frame}", thread, *args)
-        command = f"SWANK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} {str(interpackage)}"
+        interpackage = await self.rex(f"SLYNK:FRAME-PACKAGE-NAME {frame}", thread, *args)
+        command = f"SLYNK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} {str(interpackage)}"
         result = await self.rex(command, thread, *args)
         return str(result)
 
     async def debug_step(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-STEP {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-STEP {frame}", thread, *args)
         return result
 
     async def debug_next(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-NEXT {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-NEXT {frame}", thread, *args)
         return result
 
     async def debug_out(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-OUT {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-OUT {frame}", thread, *args)
         return result
 
     async def debug_break_on_return(self, frame, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-BREAK-ON-RETURN {frame}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-BREAK-ON-RETURN {frame}", thread, *args)
         return result
 
     async def debug_break(self, function_name, thread, *args):
-        result = await self.rex(f"SWANK:SLDB-BREAK {dumps(function_name)}", thread, *args)
+        result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", thread, *args)
         return result
 
     ### Profiling
 
     async def toggle_profiling_function(self, function_name, *args):
-        result = await self.rex(f"SWANK:TOGGLE-PROFILE-FDEFINITION {dumps(function_name)}", ":REPL-THREAD", *args)
+        result = await self.rex(f"SLYNK:TOGGLE-PROFILE-FDEFINITION {dumps(function_name)}", ":REPL-THREAD", *args)
         # self.emit("profile_command_complete", result)
         return result
 
     async def toggle_profiling_package(
             self, package, should_record_callers, should_profile_methods, *args):
-        command = f"SWANK:SWANK-PROFILE-PACKAGE {dumps(package)} {dumps(should_record_callers)} {dumps(should_profile_methods)}"
+        command = f"SLYNK:SLYNK-PROFILE-PACKAGE {dumps(package)} {dumps(should_record_callers)} {dumps(should_profile_methods)}"
         result = await self.rex(command, ":REPL-THREAD", *args)
         # self.emit("profile_command_complete", f"Attempting to profile {package}…")
         return result, f"Attempting to profile {package}…"
 
     async def stop_all_profiling(self, *args):
-        result = await self.rex("SWANK/BACKEND:UNPROFILE-ALL", ":REPL-THREAD", *args)
+        result = await self.rex("SLYNK/BACKEND:UNPROFILE-ALL", ":REPL-THREAD", *args)
         # self.emit("profile_command_complete", result)
         return result
 
     async def reset_profiling(self, *args):
-        result = await self.rex("SWANK/BACKEND:PROFILE-RESET", ":REPL-THREAD", *args)
+        result = await self.rex("SLYNK/BACKEND:PROFILE-RESET", ":REPL-THREAD", *args)
         # self.emit("profile_command_complete", result)
         return result
 
     async def profiling_report(self, *args):
-        result = await self.rex("SWANK/BACKEND:PROFILE-REPORT", ":REPL-THREAD", *args)
+        result = await self.rex("SLYNK/BACKEND:PROFILE-REPORT", ":REPL-THREAD", *args)
         # self.emit("profile_command_complete", "Profile report printed to REPL")
         return result, "Profile report printed to REPL"
 
     ### Code actions
 
     async def find_definitions(self, function_name, *args):
-        raw_definitions = await self.rex(f"SWANK:FIND-DEFINITIONS-FOR-EMACS {dumps(function_name)}", "T", *args)
+        raw_definitions = await self.rex(f"SLYNK:FIND-DEFINITIONS-FOR-EMACS {dumps(function_name)}", "T", *args)
         definitions = []
         for raw_definition in raw_definitions:
             try:
@@ -593,17 +625,17 @@ class SwankClient(Dispatcher):
         return definitions
 
     async def compile_string(self, string, filename, full_filename, position, *args):
-        command = f"SWANK:COMPILE-STRING-FOR-EMACS {dumps(string)} {dumps(filename)} ((:POSITION {str(position)})) {dumps(full_filename)} 'NIL"
+        command = f"SLYNK:COMPILE-STRING-FOR-EMACS {dumps(string)} {dumps(filename)} ((:POSITION {str(position)})) {dumps(full_filename)} 'NIL"
         result = await self.rex(command, "T", *args)
         return self.on_compilation(result, *args)
 
     async def compile_file(self, filename, load=True, *args):
-        result = await self.rex(f"SWANK:COMPILE-FILE-FOR-EMACS {dumps(filename)} {dumps(load)}", "T", *args)
+        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(filename)} {dumps(load)}", "T", *args)
         return self.on_compilation(result, *args)
 
     async def on_compilation(self, result, package=DEFAULT_PACKAGE):
         if not ([] in [result[2], result[4]]):  # Both are non-nil aka True.
-            result = await self.rex(f"SWANK:LOAD-FILE {result[5]}", "T", package)
+            result = await self.rex(f"SLYNK:LOAD-FILE {result[5]}", "T", package)
             return result
 
     async def expand(self, form, package=DEFAULT_PACKAGE, recursively=True, macros=True, compiler_macros=True):
@@ -614,7 +646,7 @@ class SwankClient(Dispatcher):
         elif compiler_macros:
             function_name = "COMPILER-MACROEXPAND"
         else:
-            print(f"Trivial macroexpanding being used for {form}")
+            print(f"Trivial macroëxpanding being used for {form}")
             return form
 
         if str(recursively).upper() == "ALL":
@@ -625,7 +657,7 @@ class SwankClient(Dispatcher):
         elif not recursively:
             function_name += "-1"
 
-        result = self.rex(f"SWANK:SWANK-{function_name} {dumps(form)}", "T", package)
+        result = self.rex(f"SLYNK:SLYNK-{function_name} {dumps(form)}", "T", package)
         return result
 
     async def parse_inspection(self, result, *args):
@@ -646,7 +678,7 @@ class SwankClient(Dispatcher):
         [content_description, content_length, content_start, content_end] = raw_content
 
         if content_end < content_length:
-            result_1 = await self.rex(f"SWANK:INSPECTOR-RANGE {str(content_length)} {maxsize}", "T", package)
+            result_1 = await self.rex(f"SLYNK:INSPECTOR-RANGE {str(content_length)} {maxsize}", "T", package)
             content_description_1 = result_1[0]
             if int(result_1[3]) <= int(result_1[1]):
                 raise Exception("Continues to miss part of the inspection")
@@ -660,44 +692,44 @@ class SwankClient(Dispatcher):
 
     async def inspect_presentation(self, presentation_id, should_reset=False, *args):
         should_reset = "T" if len(args) > 0 and args[0] else "NIL"
-        inspection_result = await self.rex(f"SWANK:INSPECT-PRESENTATION {str(presentation_id)} {dumps(should_reset)}",
+        inspection_result = await self.rex(f"SLYNK:INSPECT-PRESENTATION {str(presentation_id)} {dumps(should_reset)}",
                                            ":REPL-THREAD", *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_frame_var(self, frame_index, variable, thread, *args):
-        inspection_result = await self.rex(f"SWANK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args)
+        inspection_result = await self.rex(f"SLYNK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_in_frame(self, frame_index, expression_string, thread, *args):
-        inspection_result = await self.rex(f"SWANK:INSPECT-IN-FRAME {dumps(expression_string)} {str(frame_index)}",
+        inspection_result = await self.rex(f"SLYNK:INSPECT-IN-FRAME {dumps(expression_string)} {str(frame_index)}",
                                            thread, *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_current_condition(self, thread, *args):
-        inspection_result = await self.rex(f"SWANK:INSPECT-CURRENT-CONDITION", thread, *args)
+        inspection_result = await self.rex(f"SLYNK:INSPECT-CURRENT-CONDITION", thread, *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_nth_part(self, n, *args):
-        inspection_result = await self.rex(f"SWANK:INSPECT-NTH-PART {str(n)}", ":REPL-THREAD", *args)
+        inspection_result = await self.rex(f"SLYNK:INSPECT-NTH-PART {str(n)}", ":REPL-THREAD", *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_call_action(self, n, *args):
-        inspection_result = await self.rex(f"SWANK:INSPECTOR-CALL-NTH-ACTION {str(n)}", ":REPL-THREAD", *args)
+        inspection_result = await self.rex(f"SLYNK:INSPECTOR-CALL-NTH-ACTION {str(n)}", ":REPL-THREAD", *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_previous_object(self, *args):
-        inspection_result = await self.rex("SWANK:INSPECTOR-POP", ":REPL-THREAD", *args)
+        inspection_result = await self.rex("SLYNK:INSPECTOR-POP", ":REPL-THREAD", *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
     async def inspect_next_object(self, *args):
-        inspection_result = await self.rex("SWANK:INSPECTOR-NEXT", ":REPL-THREAD", *args)
+        inspection_result = await self.rex("SLYNK:INSPECTOR-NEXT", ":REPL-THREAD", *args)
         result = await self.parse_inspection(inspection_result, *args)
         return result
 
@@ -705,9 +737,8 @@ class SwankClient(Dispatcher):
         self.send_message(":EMACS-INTERRUPT :REPL-THREAD")
 
     async def quit(self):
-        result = await self.rex("SWANK/BACKEND:QUIT-LISP", "T")
+        result = await self.rex("SLYNK/BACKEND:QUIT-LISP", "T")
         return result
-
 
 class TestListener:
     def __init__(self, client: SwankClient, loop):
@@ -718,9 +749,7 @@ class TestListener:
                     disconnect=self.on_disconnect,
                     debug_setup=self.on_debug_setup,
                     debug_activate=self.on_debug_activate,
-                    debug_return=self.on_debug_return,
-                    write_string=self.write_string,
-                    presentation_end=self.repl)
+                    debug_return=self.on_debug_return)
 
     def on_connect(self):
         print("connexion")
@@ -743,19 +772,13 @@ class TestListener:
     def on_debug_return(self, data):
         print("debug R")
 
-    def repl(self, *ARGS):
-        s = input("CL-USER>")
-        self.loop.create_task(self.client.eval(s))
-
-    def write_string(self, parameter):
-        print(parameter)
-
 
 async def main(x, y):
     print("main")
     await x.connect(asyncio.get_event_loop())
     await x.prepare_swank()
-    y.repl()
+    repl = await x.create_repl()
+    print("REPL prepared")
     await x.closed()
     # x.eval("(+ 2 2)")
 
