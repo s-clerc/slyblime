@@ -1,16 +1,16 @@
 from typing import Dict, Any, List, Tuple, Optional
 
-from pydispatch import Dispatcher
+from .pydispatch import Dispatcher
 
 import asyncio
 
-from sexpdata import loads, dumps, Symbol, Quoted
+from .sexpdata import loads, dumps, Symbol, Quoted
 from collections import namedtuple
 
 import threading
 from dataclasses import dataclass
 from sys import maxsize
-from util import *
+from .util import *
 
 import pathlib
 
