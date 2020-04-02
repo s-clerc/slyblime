@@ -1,0 +1,14 @@
+[
+  {
+    "id": "tools",
+    "children": [
+      {
+        "caption": "Sly",
+        "id": "sly",
+        "children": [
+            {"caption": "Connect to Slynk", "command": "connect_slynk"},
+        ]
+      }
+    ]
+  }
+]
