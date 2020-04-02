@@ -1,7 +1,7 @@
-from sexpdata import *
+from .sexpdata import *
 from typing import Dict, Any, List, Tuple, Optional
 
-from pydispatch import Dispatcher
+from .pydispatch import Dispatcher
 
 
 class Channel(Dispatcher):
@@ -65,5 +65,7 @@ class Repl():
     def write_values(self, results):
         for result in results:
             self.print(result[0])
+
+
 
 
