@@ -5,11 +5,15 @@
 
 (in-package :socket-inspector)
 
+(defparameter *rx-url* '("localhost" 4006)) 
+
+(defparameter *tx-url* '(#(127 0 0 1) 4005))
+
 (defun read-all (stream)
   (let ((output (make-array 0 :adjustable T
                                :fill-pointer 0)))
        (loop while (listen stream) 
-             do (vector-push-extend (read-byte stream nil) output))
+            do (vector-push-extend (read-byte stream nil) output))
     output))
 
 (defun print-relay (prefix rx-socket tx-socket)
@@ -23,11 +27,11 @@
       (write-sequence buffer tx-stream)
       (force-output tx-stream))))
 
-(defvar swank (socket-connect #(127 0 0 1) 4005
+(defvar swank (socket-connect (first *tx-url*) (second *tx-url*)
                               :element-type 'octet))
 (princ "Swank connexion etabli")
 
-(defvar clients (socket-listen "localhost" 4006
+(defvar clients (socket-listen (first *rx-url*) (second *rx-url*)
                                :element-type 'octet))
 (princ "Searching for client   !")
 (defvar client (socket-accept clients))
