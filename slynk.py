@@ -176,6 +176,7 @@ class SwankClient(Dispatcher):
         self.loop = None
         self.closed_future = None
         self.debug_data = None
+        self.repls = []
 
     async def connect(self, *args):
         if len(args) > 0:
@@ -400,6 +401,7 @@ class SwankClient(Dispatcher):
         id, channel = self.make_channel()
         repl = Repl(channel)
         await self.rex(f"slynk-mrepl:create-mrepl {id}", "T")
+        self.repls.append(repl)
         return repl
 
     async def prepare_swank(self):
