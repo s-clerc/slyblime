@@ -20,6 +20,7 @@ class Channel(Dispatcher):
 class Repl():
     def __init__(self, channel):
         self.channel = channel
+        self.is_open = self.channel.is_open
         channel.bind(message_recieved=self.on_message)
 
     def on_message(self, data):
@@ -41,7 +42,8 @@ class Repl():
             pass
         elif c == "server-side-repl-close":
             self.print("Closed from serverside")
-            self.channel.is_open = True
+            self.channel.is_open = False
+            self.is_open = False
         else:
             self.print(f"Unknown REPL command {c}")
 
