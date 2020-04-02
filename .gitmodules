@@ -7,3 +7,6 @@
 [submodule "base"]
 	path = base
 	url = https://github.com/brown/base
+[submodule "sly"]
+	path = sly
+	url = https://github.com/joaotavora/sly
