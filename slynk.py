@@ -79,7 +79,7 @@ class Definition:
     label: str
     location: Location
 
-class SwankClientProtocol(Dispatcher, asyncio.Protocol):
+class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
         "reception",
         "connect",
@@ -141,7 +141,7 @@ class SwankClientProtocol(Dispatcher, asyncio.Protocol):
         print(buffer)
 
 
-class SwankClient(Dispatcher):
+class SlynkClient(Dispatcher):
     request_table: Dict[int, PromisedRequest]
     _events_ = [
         "connect",
@@ -184,7 +184,7 @@ class SwankClient(Dispatcher):
         else:
             self.loop = asyncio.new_event_loop()
             threading.Thread(target=self.loop.run_forever)
-        self.connexion = SwankClientProtocol()
+        self.connexion = SlynkClientProtocol()
         self.connexion.bind(connect=self.handle_connect,
                             disconnect=self.handle_close,
                             reception=self.handle_read)
@@ -251,7 +251,7 @@ class SwankClient(Dispatcher):
         self.channels.append(Channel(self, id))
         return id, self.channels[id]
 
-    # Swank data parsing
+    # Slynk data parsing
     @staticmethod
     def parse_position(raw_position):
         position = Position(raw_position[0][1:].lower())
@@ -404,7 +404,7 @@ class SwankClient(Dispatcher):
         self.repls.append(repl)
         return repl
 
-    async def prepare_swank(self):
+    async def prepare(self):
         print("now prep")
          # Missing C-P-C, Fuzzy, Presentations from SLIMA
         await self.add_load_paths(f"{pathlib.Path().parent.absolute()}/sly/contrib/")
@@ -417,7 +417,7 @@ class SwankClient(Dispatcher):
              "slynk/fancy-inspector",
              "slynk/mrepl",
              "slynk/arglists"])
-        print("Swank prepared")
+        print("Slynk prepared")
         #await self.rex("SLYNK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
         #await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
@@ -743,7 +743,7 @@ class SwankClient(Dispatcher):
         return result
 
 class TestListener:
-    def __init__(self, client: SwankClient, loop):
+    def __init__(self, client: SlynkClient, loop):
         self.client = client
         self.loop = loop
         self.debug_data = None
@@ -788,7 +788,7 @@ async def main(x, y):
 if __name__ == '__main__':
     PYTHONASYNCIODEBUG = 1
     loop = asyncio.new_event_loop()
-    x = SwankClient("localhost", 4005)
+    x = SlynkClient("localhost", 4005)
     y = TestListener(x, loop)
     loop.create_task(main(x, y))
     threading.Thread(target=loop.run_forever).start()
