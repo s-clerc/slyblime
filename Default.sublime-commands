@@ -1,0 +1,6 @@
+[
+  { "caption": "Apropos for external symbols", 
+    "command": "apropos"},
+    { "caption": "Connect to Slynk",
+    "command": "connect_slynk"}
+]
