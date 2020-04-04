@@ -66,6 +66,16 @@ class Repl():
         for result in results:
             self.print(result[0])
 
+def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True):
+    def parse_symbol(key):
+        nonlocal remove_colon_from_keyword
+        nonlocal lower_keys
+        key = str(key)
+        if remove_colon_from_keyword and key[0] == ":":
+            key = key[1:]
+        return key.lower()
+    return {parse_symbol(key): value 
+            for key, value in zip(plist[::2], plist[1::2])}
 
 
 
