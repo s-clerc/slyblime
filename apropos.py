@@ -11,27 +11,26 @@ import concurrent.futures
 
 class AproposCommand(sublime_plugin.WindowCommand):
 
-    def run(self):
+    def run(self, external_only=True):
         try:
             session = getSession(self.window.id())
         except:
             self.window.status_message("Slynk not connected")
             global sessions
             print(window.id, sessions)
-        self.window.show_input_panel("À propos for external symbols", "", self.confirm, None, None)
+        print(external_only)
+        self.window.show_input_panel(f"À propos for {'external' if external_only else 'all'} symbols", "", functools.partial(self.confirm, external_only), None, None)
 
-    def confirm(self, pattern):
+    def confirm(self, external_only, pattern):
         global loop
         if pattern is None:
             return
-        print(f"Will send {pattern} to run")
-        asyncio.run_coroutine_threadsafe(self.async_confirm(pattern), loop)
+        asyncio.run_coroutine_threadsafe(self.async_confirm(pattern, external_only), loop)
 
-    async def async_confirm(self, pattern):
-        print("Asynconifrm")
+    async def async_confirm(self, pattern, external_only=True):
+        print(f"ext {external_only}")
         session = getSession(self.window.id())
-        apropos = await session.slynk.apropos(pattern)
-        print("Now ready to show panel")
+        apropos = await session.slynk.apropos(pattern, external_only)
         self.window.status_message(f"Apropos retrieved: {len(apropos)} matching symbols")
         previews = generate_previews(apropos)
         self.window.status_message(f"Apropos previews processed")
@@ -43,6 +42,12 @@ class AproposCommand(sublime_plugin.WindowCommand):
 
     def run_inspector(self, choice):
         self.window.status_message(f"Run inspector is not yet implemented: {choice}")
+
+class AproposAllCommand(AproposCommand):
+    # Because window.run_commad wasn't passing arguments at the time of
+    # coding.
+    def run(self):
+        super().run(False)
 
 def process_doc(field):
     return "[Undocumented]" if type(field) == sexpdata.Symbol else str(field)
@@ -85,7 +90,6 @@ def process_arguments(arglist):
     return result
 
 def generate_previews(apropos):
-    print("Generating previews")
     content = [["Open as view", f"Not yet implemented {len(apropos)} symbols."]]
     max_lines = 1
     for apropo in apropos:
