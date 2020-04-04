@@ -77,5 +77,9 @@ def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True
     return {parse_symbol(key): value 
             for key, value in zip(plist[::2], plist[1::2])}
 
+def get_if_in(dictionary, *items):
+    return tuple(dictionary[item] if item in dictionary else None 
+                                  for item in items)
+
 
 
