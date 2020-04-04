@@ -36,7 +36,6 @@ class StackFrameLocal:
     id: int
     value: str
 
-
 @dataclass
 class StackFrame:
     index: int
@@ -451,6 +450,15 @@ class SlynkClient(Dispatcher):
             response = await self.rex(command, ":REPL-THREAD", *args)
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
+    # A defslyfun
+    async def apropos(self, pattern, external_only=False, case_sensitive=False, *args):
+        command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
+        propos_list = await self.rex(command, "T", *args)
+        print("Apropos obtained")
+        x = [property_list_to_dict(plist) for plist in propos_list]
+        print("AP PROC")
+        return x
+
     async def autocomplete(self, prefix, package):
         prefix = dumps(prefix)
         command = f"SLYNK:SIMPLE-COMPLETIONS {prefix} \"{package}\""
@@ -780,21 +788,25 @@ class TestListener:
         print("debug R")
 
 
-async def main(x, y):
+async def mainA(x, y, repl):
     print("main")
     await x.connect(asyncio.get_event_loop())
-    await x.prepare_swank()
-    repl = await x.create_repl()
-    print("REPL prepared")
+    await x.prepare()
+    if repl:
+        repl = await x.create_repl()
+        print("REPL prepared")
     await x.closed()
     # x.eval("(+ 2 2)")
 
-
-if __name__ == '__main__':
+def main(repl):
     PYTHONASYNCIODEBUG = 1
     loop = asyncio.new_event_loop()
     x = SlynkClient("localhost", 4005)
     y = TestListener(x, loop)
-    loop.create_task(main(x, y))
+    loop.create_task(mainA(x, y, repl))
     threading.Thread(target=loop.run_forever).start()
-    print("Anyways")
+    print("Anyways return")
+    return x
+
+if __name__ == '__main__':
+    main(True)
