@@ -1,11 +1,18 @@
-# TechSideOnline.com Webify Sublime Text 3 plugin example
+from sublime import *
+import sublime_plugin, threading, asyncio  # import the required modules
 
-import sublime, sublime_plugin, threading, asyncio  # import the required modules
+from operator import itemgetter
 
-from . import slynk
-sessions = {}
-loop = asyncio.new_event_loop()
+from . import slynk, util, sexpdata
+import logging
+import functools
 
+if "sessions" not in globals():
+    print("Preparing stuff for SLY")
+    sessions = {}
+    loop = asyncio.new_event_loop()
+    loop.set_debug(True)
+    logging.basicConfig(level=logging.DEBUG)
 
 def getSession(id):
     global sessions
@@ -66,4 +73,3 @@ class DisconnectSlynkCommand(sublime_plugin.WindowCommand):
         session = getSession(self.window.id())
         session.slynk.disconnect()
 
-#class AproposCommand(sublime_plugin.TextInputHandler):
