@@ -4,7 +4,7 @@ import sublime_plugin, threading, asyncio  # import the required modules
 from operator import itemgetter
 
 from . import slynk, util, sexpdata
-from .slims import *
+from .sly import *
 import logging
 import functools
 import concurrent.futures
@@ -17,7 +17,7 @@ class AproposCommand(sublime_plugin.WindowCommand):
         except:
             self.window.status_message("Slynk not connected")
             global sessions
-            print(window.id, sessions)
+            print(self.window.id, sessions)
         print(external_only)
         self.window.show_input_panel(f"À propos for {'external' if external_only else 'all'} symbols", "", functools.partial(self.confirm, external_only), None, None)
 

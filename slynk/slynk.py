@@ -451,7 +451,7 @@ class SlynkClient(Dispatcher):
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
     # A defslyfun
-    async def apropos(self, pattern, external_only=False, case_sensitive=False, *args):
+    async def apropos(self, pattern, external_only=True, case_sensitive=False, *args):
         command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
         propos_list = await self.rex(command, "T", *args)
         print("Apropos obtained")
