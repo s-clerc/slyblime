@@ -11,14 +11,15 @@ import concurrent.futures
 
 class AproposCommand(sublime_plugin.WindowCommand):
 
-    def run(self, external_only=True):
+    def run(self, **kwargs):
         try:
             session = getSession(self.window.id())
         except:
             self.window.status_message("Slynk not connected")
             global sessions
             print(self.window.id, sessions)
-        print(external_only)
+        print(kwargs)
+        external_only = True if "external_only" not in kwargs else kwargs["external_only"]
         self.window.show_input_panel(f"À propos for {'external' if external_only else 'all'} symbols", "", functools.partial(self.confirm, external_only), None, None)
 
     def confirm(self, external_only, pattern):
@@ -42,12 +43,6 @@ class AproposCommand(sublime_plugin.WindowCommand):
 
     def run_inspector(self, choice):
         self.window.status_message(f"Run inspector is not yet implemented: {choice}")
-
-class AproposAllCommand(AproposCommand):
-    # Because window.run_commad wasn't passing arguments at the time of
-    # coding.
-    def run(self):
-        super().run(False)
 
 def process_doc(field):
     return "[Undocumented]" if type(field) == sexpdata.Symbol else str(field)
@@ -103,8 +98,6 @@ def generate_previews(apropos):
             for j in range(max_lines - len(entry)):
                 entry.append("")
     return content
-
-
 
 def generate_preview(apropos):
     preselection = ["designator", "bounds"]

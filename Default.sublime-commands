@@ -1,6 +1,10 @@
 [
   { "caption": "Apropos for external symbols", 
-    "command": "apropos"},
+    "command": "apropos",
+	"args": {"external_only": true}},
+	{ "caption": "Apropos for all symbols", 
+    "command": "apropos",
+	"args": {"external_only": false}},
     { "caption": "Connect to Slynk",
     "command": "connect_slynk"}
 ]
