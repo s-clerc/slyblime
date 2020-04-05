@@ -3,7 +3,9 @@ import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
 
-from . import slynk, util, sexpdata
+from . import slynk, util, sexpdata, commands
+
+from .commands import apropos
 import logging
 import functools
 
