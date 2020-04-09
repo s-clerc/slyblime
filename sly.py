@@ -3,9 +3,10 @@ import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
 
-from . import slynk, util, sexpdata, commands
+from . import util, sexpdata
 
-from .commands import apropos
+from .slynk import slynk
+
 import logging
 import functools
 
@@ -29,6 +30,7 @@ class SlynkSession:
         super().__init__()
         self.slynk = slynk.SlynkClient(host, port)
         self.window = window
+        self.repl_views = []
         self.slynk.bind(connect=self.on_connect,
                          disconnect=self.on_disconnect,
                          debug_setup=self.on_debug_setup,
@@ -40,7 +42,8 @@ class SlynkSession:
         print("Connect called")
         self.window.status_message(f"Attempting to connect to Slynk at {slynk.host}:{slynk.port} [≈ 1 min]")
         await slynk.connect(asyncio.get_event_loop())
-        await slynk.prepare()
+        print("start pret")
+        await slynk.prepare(f"{packages_path()}/Slims")
         #await slynk.closed()
 
     def on_connect(self, *args):

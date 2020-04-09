@@ -1,8 +1,9 @@
-from .sexpdata import *
+from ..sexpdata import *
 from typing import Dict, Any, List, Tuple, Optional
 
-from .pydispatch import Dispatcher
+from ..pydispatch import Dispatcher
 
+import queue
 
 class Channel(Dispatcher):
     _events_ = ["message_recieved"]
