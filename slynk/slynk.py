@@ -403,10 +403,10 @@ class SlynkClient(Dispatcher):
         self.repls.append(repl)
         return repl
 
-    async def prepare(self):
+    async def prepare(self, path=pathlib.Path().parent.absolute()):
         print("now prep")
-         # Missing C-P-C, Fuzzy, Presentations from SLIMA
-        await self.add_load_paths(f"{pathlib.Path().parent.absolute()}/sly/contrib/")
+         # Missing C-P-C, Fuzzy, Presentations from SLIMAß
+        await self.add_load_paths(f"{path}/sly/contrib/")
         print("first done")
         await self.require(
             ["slynk/indentation",
