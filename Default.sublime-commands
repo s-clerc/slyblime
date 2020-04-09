@@ -1,10 +1,24 @@
 [
-  { "caption": "Apropos for external symbols", 
+  {
+    "caption": "Apropos for external symbols",
     "command": "apropos",
-	"args": {"external_only": true}},
-	{ "caption": "Apropos for all symbols", 
+    "args": {
+      "external_only": true
+    }
+  },
+  {
+    "caption": "Apropos for all symbols",
     "command": "apropos",
-	"args": {"external_only": false}},
-    { "caption": "Connect to Slynk",
-    "command": "connect_slynk"}
+    "args": {
+      "external_only": false
+    }
+  },
+  {
+    "caption": "Connect to Slynk",
+    "command": "connect_slynk"
+  },
+  {
+    "caption": "Create Inferior Lisp REPL",
+    "command": "create_repl"
+  }
 ]
