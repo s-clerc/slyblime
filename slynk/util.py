@@ -18,54 +18,50 @@ class Channel(Dispatcher):
     def send_message(self, message):
         self.slynk.send_message(f"(:EMACS-CHANNEL-SEND {str(self.id)} {message})")
 
-class Repl():
-    def __init__(self, channel):
+
+class Repl(Dispatcher):
+    _events_ = ["write_values",
+                "evaluation_aborted",
+                "write_string",
+                "set_read_mode",
+                "prompt",
+                "open_dedicated_output_stream",
+                "clear_repl_history",
+                "server_side_repl_close"]
+
+    def __init__(self, channel, send_events=False):
         self.channel = channel
         self.is_open = self.channel.is_open
         channel.bind(message_recieved=self.on_message)
+        self.queue = queue.SimpleQueue()
+        self.send_events = send_events
+
+    def play_events(self):
+        while not self.queue.empty():
+            self.process_message(self.queue.get_nowait())
+        self.send_events = True
+
+    def pause_events(self):
+        self.send_events = False
 
     def on_message(self, data):
-        c = data[0].lower()[1:]
-        parameters = data[1:]
-        if c == "write-values":
-            self.write_values(parameters[0])
-        elif c == "evaluation-aborted":
-            self.print(f"Aborted evaluation for {parameters[0]}")
-        elif c == "write-string":
-            self.print(parameters[0])
-        elif c == "set-read-mode":
-            self.print("Read-mode set?? wtf")
-        elif c == "prompt":
-            self.prompt(parameters)
-        elif c == "open-dedicated-output-stream":
-            self.print("Attempted to open-dedicated-output-stream ??")
-        elif c == "clear-repl-history":
-            pass
-        elif c == "server-side-repl-close":
+        if self.send_events:
+            self.process_message(data)
+        else:
+            self.queue.put(data)
+
+    def process_message(self, data):
+        command = data[0].lower()[1:]
+        if command == "server-side-repl-close":
             self.print("Closed from serverside")
             self.channel.is_open = False
             self.is_open = False
-        else:
-            self.print(f"Unknown REPL command {c}")
-
-    def prompt(self, parameters):
-        [package, prompt, error_level, *condition] = parameters
-        if error_level == 0:
-            prompt = f"{prompt}〉"
-        else:
-            prompt = f"{prompt} ｢{error_level}｣〉"
-        s = input(prompt)
-        self.process(s)
+        self.emit(command.replace("-", "_"), *data[1:])
 
     def process(self, input):
         self.channel.send_message(f"(:PROCESS {dumps(input)})")
+        
 
-    def print(self, message):
-        print(message)
-
-    def write_values(self, results):
-        for result in results:
-            self.print(result[0])
 
 def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True):
     def parse_symbol(key):
