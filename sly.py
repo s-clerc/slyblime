@@ -32,19 +32,19 @@ class SlynkSession:
         self.window = window
         self.repl_views = []
         self.loop = loop
-        self.slynk.bind(connect=self.on_connect,
-                         disconnect=self.on_disconnect,
-                         debug_setup=self.on_debug_setup,
-                         debug_activate=self.on_debug_activate,
-                         debug_return=self.on_debug_return,
-                         __aio_loop__ = loop)
+        self.slynk.bind(__aio_loop__ = loop,
+                        connect=self.on_connect,
+                        disconnect=self.on_disconnect,
+                        debug_setup=self.on_debug_setup,
+                        debug_activate=self.on_debug_activate,
+                        debug_return=self.on_debug_return,
+                        read_from_minibuffer=self.on_read_from_minibuffer,
+                        y_or_n_p=self.on_y_or_n)
 
     async def connect(self):
         slynk = self.slynk
-        print("Connect called")
         self.window.status_message(f"Attempting to connect to Slynk at {slynk.host}:{slynk.port} [≈ 1 min]")
         await slynk.connect(asyncio.get_event_loop())
-        print("start pret")
         await slynk.prepare(f"{packages_path()}/Slims")
         #await slynk.closed()
 
@@ -70,6 +70,19 @@ class SlynkSession:
 
     def on_debug_return(self, *args):
         print(f":return {args}")
+
+    async def on_read_from_minibuffer(self, prompt, initial_value, future):
+        initial_value = initial_value if initial_value else ""
+        output = await util.show_input_panel(self, prompt, initial_value)
+        future.set_result(output)
+
+    async def on_y_or_n(self, prompt, future):
+        value = yes_no_cancel_dialog(prompt)
+        if value == DIALOG_CANCEL:
+            future.cancelled()
+        else:
+            future.set_result(True if value == DIALOG_YES else False)
+
 
 class ConnectSlynkCommand(sublime_plugin.WindowCommand):
     def run(self, host="localhost", port=4005):  # implement run method
