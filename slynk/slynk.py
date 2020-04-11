@@ -186,7 +186,8 @@ class SlynkClient(Dispatcher):
         self.connexion = SlynkClientProtocol()
         self.connexion.bind(connect=self.handle_connect,
                             disconnect=self.handle_close,
-                            reception=self.handle_read)
+                            reception=self.handle_read,
+                            __aio_loop__=self.loop)
         await self.loop.create_connection(lambda: self.connexion,
                                           self.host, self.port)
         self.closed_future = self.loop.create_future()
@@ -208,7 +209,7 @@ class SlynkClient(Dispatcher):
             self.closed_future.set_result(True)
             self.emit("disconnect")
 
-    def handle_read(self, data):
+    async def handle_read(self, data):
         print(data)
         expression = loads(data.decode("utf-8"))
         command = str(expression[0]).lower()[1:]  # This should be a keyword symbol
@@ -231,11 +232,11 @@ class SlynkClient(Dispatcher):
         elif command == "debug-return":
             self.debug_return_handler(expression)
         elif command == "read-from-minibuffer":
-            self.read_from_minibuffer_handler(expression)
+            await self.read_from_minibuffer_handler(expression)
         elif command == "y-or-n-p":
-            self.y_or_n_handler(expression)
+            await self.y_or_n_handler(expression)
         elif command == "read-string":
-            self.read_string_handler(expression)
+            await self.read_string_handler(expression)
         elif command == "read-aborted":
             self.read_aborted_handler(expression)
         elif command == "ping":
@@ -376,7 +377,7 @@ class SlynkClient(Dispatcher):
         string = await self._futured_emit("read_string", tag)
         self.send_message(f":EMACS-RETURN-STRING {thread} {tag} {dumps(string)}")
 
-    async def read_aborted_handler(self, expression):
+    def read_aborted_handler(self, expression):
         thread, tag = self._extract_properties(expression)
         self.emit("read_aborted", tag)
 
