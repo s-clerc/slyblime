@@ -349,7 +349,7 @@ class SlynkClient(Dispatcher):
     def _extract_question_properties(self, expression):
         thread, tag = self._extract_properties(expression)
         prompt = str(expression[3])
-        initial_value = str(expression[4])
+        initial_value = expression[4] if len(expression) > 4 and expression[4] else ""
         return thread, tag, prompt, initial_value
 
     async def _futured_emit(self, name, *args, **kwargs):
@@ -358,8 +358,8 @@ class SlynkClient(Dispatcher):
         # but in the interests of consistency (laziness), it is done using an event
         # listener.
         self.emit(name, *args, future, **kwargs)
-        answer = await future.result()
-        return answer
+        await future
+        return future.result()
 
     async def read_from_minibuffer_handler(self, expression):
         thread, tag, prompt, initial_value = self._extract_question_properties(expression)
