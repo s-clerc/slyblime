@@ -442,8 +442,9 @@ class String(unicode):
 
     _lisp_quoted_specials = [  # from Pymacs
         ('\\', '\\\\'),    # must come first to avoid doubly quoting "\"
-        ('"', '\\"'), ('\b', '\\b'), ('\f', '\\f'),
-        ('\n', '\\n'), ('\r', '\\r'), ('\t', '\\t')]
+        ('"', '\\"'), #('\b', '\\b'), ('\f', '\\f'),
+       # ('\n', '\\n'), ('\r', '\\r'), ('\t', '\\t')
+        ]
 
     _lisp_quoted_to_raw = dict((q, r) for (r, q) in _lisp_quoted_specials)
 
