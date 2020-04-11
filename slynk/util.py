@@ -27,7 +27,8 @@ class Repl(Dispatcher):
                 "prompt",
                 "open_dedicated_output_stream",
                 "clear_repl_history",
-                "server_side_repl_close"]
+                "server_side_repl_close",
+                "unknown"]
 
     def __init__(self, channel, send_events=False):
         self.channel = channel
@@ -56,7 +57,12 @@ class Repl(Dispatcher):
             self.print("Closed from serverside")
             self.channel.is_open = False
             self.is_open = False
-        self.emit(command.replace("-", "_"), *data[1:])
+        command = command.replace("-", "_")
+        if command in self._events_:
+            self.emit(command, *data[1:])
+        else:
+            print(f"unknown event {command}")
+            self.emit("unknown", *data)
 
     def process(self, input):
         self.channel.send_message(f"(:PROCESS {dumps(input)})")
