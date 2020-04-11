@@ -365,17 +365,17 @@ class SlynkClient(Dispatcher):
     async def read_from_minibuffer_handler(self, expression):
         thread, tag, prompt, initial_value = self._extract_question_properties(expression)
         answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
-        self.send_message(f":EMACS-RETURN {thread} {tag} {dumps(answer)}")
+        self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def y_or_n_handler(self, expression):
         thread, tag, prompt, initial_value = self._extract_question_properties(expression)
-        answer = await self._futured_emit("y_or_n_p", prompt, initial_value)
-        self.send_message(f":EMACS-RETURN {thread} {tag} {dumps(answer)}")
+        answer = await self._futured_emit("y_or_n_p", prompt)
+        self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def read_string_handler(self, expression):
         thread, tag = self._extract_properties(expression)
         string = await self._futured_emit("read_string", tag)
-        self.send_message(f":EMACS-RETURN-STRING {thread} {tag} {dumps(string)}")
+        self.send_message(f"(:EMACS-RETURN-STRING {thread} {tag} {dumps(string)})")
 
     def read_aborted_handler(self, expression):
         thread, tag = self._extract_properties(expression)
