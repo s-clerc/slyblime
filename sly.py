@@ -3,7 +3,7 @@ import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
 
-from . import util, sexpdata
+from . import util, sexpdata, debugger
 
 from .slynk import slynk
 
@@ -26,16 +26,18 @@ def addSession(id, session):
     sessions[id] = session
 
 class SlynkSession:
-    def __init__(self, host, port, window) -> None:
+    def __init__(self, host, port, window, loop) -> None:
         super().__init__()
         self.slynk = slynk.SlynkClient(host, port)
         self.window = window
         self.repl_views = []
+        self.loop = loop
         self.slynk.bind(connect=self.on_connect,
                          disconnect=self.on_disconnect,
                          debug_setup=self.on_debug_setup,
                          debug_activate=self.on_debug_activate,
-                         debug_return=self.on_debug_return)
+                         debug_return=self.on_debug_return,
+                         __aio_loop__ = loop)
 
     async def connect(self):
         slynk = self.slynk
@@ -54,19 +56,22 @@ class SlynkSession:
         self.window.status_message("SLYNK connexion lost")
         print("SLYNK connexion lost")
 
-    def on_debug_setup(self, *args):
-        pass
+    async def on_debug_setup(self, debug_data):
+        print("run")
+        x = await debugger.show(self, debug_data)
+        print("debugger terminated")
+        #(action, index)
 
     def on_debug_activate(self, *args):
-        pass
+        print(f":activate {args}")
 
     def on_debug_return(self, *args):
-        pass
+        print(f":return {args}")
 
 class ConnectSlynkCommand(sublime_plugin.WindowCommand):
-    def run(self, port=4005):  # implement run method
+    def run(self, host="localhost", port=4005):  # implement run method
         global loop
-        session = SlynkSession("localhost", port, self.window)
+        session = SlynkSession(host, port, self.window, loop)
         if not loop.is_running():
             threading.Thread(target=loop.run_forever).start()
         asyncio.run_coroutine_threadsafe(session.connect(), loop)
