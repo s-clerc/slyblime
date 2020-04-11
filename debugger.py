@@ -19,24 +19,26 @@ if "futures" not in globals():
 
 def design(debug_data: slynk.slynk.DebugEventData):
     html = ('<html> <body id="sly-debugger">'
-        f'<h1>⎉ Debugger {escape(str(debug_data.level))}</h1>'
+        f'<h1>⎉ Debugger level {escape(str(debug_data.level))}</h1>'
         f'<h2>{escape(debug_data.title)}</h2>'
         f'<h3> {escape(debug_data.type)}</h3> <hr>'
-        f'<ol start="0">')
+        f'<ol start="0">'
+         '<h4> Restarts: </h4>')
     # Restarts
     for index, restart in enumerate(debug_data.restarts):
         label = restart[0].lower().capitalize()
         html += (
             f'<li><a class="button" href="restart-{index}">{escape(label)}</a>'
-            f'{escape(restart[1])}</li>')
-    html += '</ol><hr><ol start="1">'
+            f' {escape(restart[1])}</li>')
+    html += (
+        '</ol><hr><ol start="1">'
+        '<h4> Backtrace: </h4>')
     #Stack frames:
     for index, frame_title, restartable in debug_data.stack_frames:
-        button = f'<a href="frame-{index}" class="button"> Restartable" </a>' if restartable else ""
         html += (
-            f'<li  value="{index}">' +
-            button +
-            f'{escape(frame_title)}</li>')
+            f'<li  value="{index}">' 
+            f'<a href="frame-{index}" class="stack_frame">'
+            f' {escape(frame_title)}</a></li>')
     html += '</ol> </body> </html>'
     return html
 
