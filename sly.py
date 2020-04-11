@@ -58,8 +58,11 @@ class SlynkSession:
 
     async def on_debug_setup(self, debug_data):
         print("run")
-        x = await debugger.show(self, debug_data)
-        print("debugger terminated")
+        (action, index) = await debugger.show(self, debug_data)
+        if action == "restart": 
+            await self.slynk.debug_invoke_restart(debug_data.level, index, debug_data.thread)
+        elif action == "frame":
+            await self.slynk.debug_restart_frame(index, debug_data.thread)
         #(action, index)
 
     def on_debug_activate(self, *args):
