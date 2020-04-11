@@ -8,6 +8,7 @@ import logging
 import functools
 import concurrent.futures
 import uuid
+from html import escape
 
 from . import pydispatch
 
@@ -18,16 +19,16 @@ if "futures" not in globals():
 
 def design(debug_data: slynk.slynk.DebugEventData):
     html = ('<html> <body id="sly-debugger">'
-        f'<h1>⎉ Debugger {str(debug_data.level)}</h1>'
-        f'<h2>{debug_data.title}</h2>'
-        f'<h3> {debug_data.type}</h3> <hr>'
+        f'<h1>⎉ Debugger {escape(str(debug_data.level))}</h1>'
+        f'<h2>{escape(debug_data.title)}</h2>'
+        f'<h3> {escape(debug_data.type)}</h3> <hr>'
         f'<ol start="0">')
     # Restarts
     for index, restart in enumerate(debug_data.restarts):
         label = restart[0].lower().capitalize()
         html += (
-            f'<li><a class="button" href="restart-{index}">{label}</a>'
-            f'{restart[1]}</li>')
+            f'<li><a class="button" href="restart-{index}">{escape(label)}</a>'
+            f'{escape(restart[1])}</li>')
     html += '</ol><hr><ol start="1">'
     #Stack frames:
     for index, frame_title, restartable in debug_data.stack_frames:
@@ -35,7 +36,7 @@ def design(debug_data: slynk.slynk.DebugEventData):
         html += (
             f'<li  value="{index}">' +
             button +
-            f'{frame_title}</li>')
+            f'{escape(frame_title)}</li>')
     html += '</ol> </body> </html>'
     return html
 
@@ -64,11 +65,6 @@ async def async_run(**kwargs):
     future_id = kwargs["future"]
     [action, index] = url.split("-")
     index = int(index)
-
-    if action == "invoke":
-        print(f"Invoke restart {index}")
-    elif action == "restart":
-        print(f"Stack-frame restart {index}")
     futures[future_id].set_result((action, index))
 
 
