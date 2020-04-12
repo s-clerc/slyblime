@@ -18,6 +18,7 @@ class ReplWrapper(repl.Repl):
         super().__init__("utf-8")
         self.slynk_repl = slynk_repl
         self._killed = False
+        
     # Sublime REPL specific
     def read_bytes(self):
         return None
@@ -27,17 +28,13 @@ class ReplWrapper(repl.Repl):
         self.slynk_repl.process(to_write[:-1])
 
 class EventBasedReplView(sublimerepl.ReplView):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print("Before init ok")
         self.repl.slynk_repl.bind(write_string=self.on_print,
                                   write_values=self.on_write_values,
                                   prompt=self.on_prompt)
         self.repl.slynk_repl.play_events()
         #print(self.repl.slynk_repl.queue.get())
-        print("ALL DONE")
-
 
     def update_view_loop(self):
         return True
@@ -95,4 +92,14 @@ class CreateReplCommand(sublime_plugin.WindowCommand):
         global loop
         session = getSession(self.window.id())
         asyncio.run_coroutine_threadsafe(create_main_repl(session), loop)
+
+class ReplNewlineCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        if not (repl_view := sublimerepl.manager.repl_view(self.view)):
+            return
+        view = repl_view._view
+        selection = view.sel()
+        caret_point = selection[len(selection)-1].begin()
+        view.insert(edit, caret_point, "\n")
+
 
