@@ -17,7 +17,7 @@ async def show_input_panel(session, prompt, initial_value, on_change=None):
         nonlocal future
         nonlocal session
         async def set_result(future):
-            future.cancelled()
+            future.cancel()
         asyncio.run_coroutine_threadsafe(set_result(future), session.loop)
     session.window.show_input_panel(prompt, initial_value, on_confirm, on_change, on_cancel)
     await future
