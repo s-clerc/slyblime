@@ -79,7 +79,7 @@ class SlynkSession:
     async def on_y_or_n(self, prompt, future):
         value = yes_no_cancel_dialog(prompt)
         if value == DIALOG_CANCEL:
-            future.cancelled()
+            future.cancel()
         else:
             future.set_result(True if value == DIALOG_YES else False)
 
