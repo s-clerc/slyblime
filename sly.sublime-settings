@@ -24,6 +24,7 @@
       { "name": "Common Lisp",
         "syntax_regex": "(?i)lisp",
         "symbol_for_homonyms": "…",
+        "separator": " ",
         "classifications": [
           {
             "regex": "fn",
