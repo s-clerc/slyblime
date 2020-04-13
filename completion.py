@@ -77,9 +77,12 @@ def create_completion_item(completion):
         details=f"Match: {int(completion.probability*1000)} ‰")
 
 class SlyCompletionListener(sublime_plugin.EventListener):
-    def should_compete(*args):
-        return True
+    def should_complete(self, view):
+        return "LISP" in view.settings().get("syntax").upper()
+
     def on_query_completions(self, view, pattern, locations):
+        if not self.should_complete(view):
+            return None
         session = sly.getSession(view.window().id())
         try:
             completions = asyncio.run_coroutine_threadsafe(
