@@ -83,7 +83,7 @@ class Completion:
     name: str
     probability: float
     match_locations: List[List[Union[int, str]]]
-    kind: str
+    namespaces: List[str]
 
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
