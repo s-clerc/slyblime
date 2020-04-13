@@ -16,10 +16,10 @@ from . import pydispatch
 if "futures" not in globals():
     futures = {}
 
-
 def design(debug_data: slynk.slynk.DebugEventData):
+    affixes = sly.settings.get("debugger")["header_affixes"]
     html = ('<html> <body id="sly-debugger">'
-        f'<h1>⎉ Debugger level {escape(str(debug_data.level))}</h1>'
+        f'<h1>{escape(affixes[0]+str(debug_data.level)+affixes[1])}</h1>'
         f'<h2>{escape(debug_data.title)}</h2>'
         f'<h3> {escape(debug_data.type)}</h3> <hr>'
         f'<ol start="0">'
@@ -45,7 +45,8 @@ def design(debug_data: slynk.slynk.DebugEventData):
 async def show(session, debug_data: slynk.slynk.DebugEventData):
     global futures
     html = design(debug_data)
-    title = f"⎉ {str(debug_data.level)}"
+    affixes = sly.settings.get("debugger")["view_title_affixes"]
+    title = affixes[0] + str(debug_data.level) + affixes[1]
     future_id = uuid.uuid4().hex
     future =  session.loop.create_future()
     futures[future_id] = future

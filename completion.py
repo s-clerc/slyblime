@@ -12,7 +12,7 @@ from html import escape
 from . import pydispatch
 from dataclasses import dataclass
 
-MAXIMUM_TIMEOUT = 1 # allowed to fetch completions
+
 
 @dataclass
 class DisplayCompletion:
@@ -87,7 +87,7 @@ class SlyCompletionListener(sublime_plugin.EventListener):
         try:
             completions = asyncio.run_coroutine_threadsafe(
                 session.slynk.completions(pattern), 
-                session.loop).result(MAXIMUM_TIMEOUT)
+                session.loop).result(sly.settings.get("maximum_timeout"))
         except Exception as e:
             session.window.status_message("Failed to fetch completion")
             print(e)

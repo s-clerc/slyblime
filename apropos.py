@@ -127,7 +127,7 @@ def generate_preview(apropos):
         if label in preselection:
             continue
         label = process_label(label)
-        if len(entry[len(entry)-1]) + len(label) > 60:
+        if len(entry[len(entry)-1]) + len(label) > settings.get("apropos")["max_width"]:
             entry.append(label)
         else:
             entry[len(entry)-1] += f" {label}"
