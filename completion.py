@@ -30,6 +30,7 @@ class Classifier:
     syntax_regex: str
     classifications: List[Classification]
     symbol_for_homonyms: str = ""
+    separator: str = ""
 
 @dataclass
 class DisplayCompletion:
@@ -50,7 +51,7 @@ def determine_display(namespaces, classifier):
             continue
         # Following computations are used everywhere
         is_short = len(namespaces) < 2
-        description = " ".join([flavor.capitalize() for flavor in namespaces])
+        description = classifier.separator.join([flavor.capitalize() for flavor in namespaces])
         
         # We need to make sure that if there is no namespaces information
         # we shown "unknown" in the typebox.
@@ -95,7 +96,8 @@ def convert_classifier(classifier):
         classifier["name"],
         classifier["syntax_regex"],
         [prepare_classification(c) for c in classifier["classifications"]],
-        classifier["symbol_for_homonyms"])
+        classifier["symbol_for_homonyms"],
+        classifier["separator"])
 
 class SlyCompletionListener(sublime_plugin.EventListener):
     def on_query_completions(self, view, pattern, locations):
