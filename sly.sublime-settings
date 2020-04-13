@@ -1,22 +1,75 @@
 {
   "maximum_timeout": 1,
   "default_connexion_parameters": {
-	"hostname": "localhost",
-	"port": 4005
+    "hostname": "localhost",
+    "port": 4005
   },
   "debug": true,
   "repl": {
-	"prompt": "〉",
-	"error": [" ｢", "｣"],
-	"syntax": "Packages/Lisp/Lisp.tmLanguage",
-	"view_title_affixes": ["🖵 sly ", ""],
-	"value_prefix": "⟹ "
+    "prompt": "〉",
+    "error": [" ｢", "｣"],
+    "syntax": "Packages/Lisp/Lisp.tmLanguage",
+    "view_title_affixes": ["🖵 sly ", ""],
+    "value_prefix": "⟹ "
   },
   "apropos": {
-	"max_width": 60
+    "max_width": 60
   },
   "debugger": {
-	"header_affixes": [ "⎉ Debugger level ",""],
-	"view_title_affixes": ["⎉ ", ""]
+    "header_affixes": [ "⎉ Debugger level ",""],
+    "view_title_affixes": ["⎉ ", ""]
   },
+  "completion": {
+    "classifiers": [
+      { "name": "Common Lisp",
+        "syntax_regex": "(?i)lisp",
+        "symbol_for_homonyms": "…",
+        "classifications": [
+          {
+            "regex": "fn",
+            "kind": "KIND_ID_FUNCTION",
+            "symbol":"ƒ"
+          },
+          {
+            "regex": "generic-fn",
+            "kind": "KIND_ID_FUNCTION",
+            "symbol": "g"
+          },
+          {
+            "regex": "var",
+            "kind": "KIND_ID_VARIABLE"
+          },
+          {
+            "regex": "type",
+            "kind": "KIND_ID_TYPE"
+          },
+          {
+            "regex": "pak",
+            "kind": "KIND_ID_NAMESPACE"
+          },
+          {
+            "regex": "cla",
+            "kind": "KIND_ID_AMBIGUOUS",
+            "symbol": "C"
+          },
+          {
+            "regex": "macro",
+            "kind": "KIND_ID_AMBIGUOUS",
+            "symbol": "⎈",
+            "short_box": true
+          },
+          {
+            "regex": "special-op",
+            "kind": "KIND_ID_KEYWORD",
+            "symbol": "⎇",
+            "long_symbol": true
+          },
+          { "regex": ".*",
+            "kind": "KIND_ID_AMBIGUOUS",
+            "long_symbol": true
+          }
+        ]
+      }
+    ]
+  }
 }
