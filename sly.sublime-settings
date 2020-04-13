@@ -50,12 +50,12 @@
           },
           {
             "regex": "cla",
-            "kind": "KIND_ID_AMBIGUOUS",
-            "symbol": "C"
+            "kind": "KIND_ID_TYPE",
+            "short_box": true
           },
           {
             "regex": "macro",
-            "kind": "KIND_ID_AMBIGUOUS",
+            "kind": "KIND_ID_KEYWORD",
             "symbol": "⎈",
             "short_box": true
           },
