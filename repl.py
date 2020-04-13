@@ -13,6 +13,8 @@ from SublimeREPL import sublimerepl
 from SublimeREPL.repls import repl
 from . import pydispatch
 
+
+
 class ReplWrapper(repl.Repl):
     def __init__(self, slynk_repl):
         super().__init__("utf-8")
@@ -49,13 +51,16 @@ class EventBasedReplView(sublimerepl.ReplView):
 
     def on_write_values(self, values, *args):
         for value in values:
-            self.write("⟹ " + str(value[0]) + "\n")
+            self.write(settings.get("repl")['value_prefix'] + str(value[0]) + "\n")
 
     def on_prompt(self, package, prompt, error_level, *args):
+        terminator = settings.get("repl")['prompt']
+        left = settings.get("repl")['error'][0]
+        right = settings.get("repl")['error'][1]
         if error_level == 0:
-            prompt = f"{prompt}〉"
+            prompt = prompt + terminator
         else:
-            prompt = f"{prompt} ｢{error_level}｣〉"
+            prompt = prompt + left + error_level + right + terminator
         # Write-prompt makes it glitch out for some reason idky
         self.write(prompt)
 
@@ -74,14 +79,15 @@ async def create_main_repl(session):
                 break
         view = found or window.new_file()
         try:
-            rv = EventBasedReplView(view, ReplWrapper(repl), "Packages/Lisp/Lisp.tmLanguage", None)
+            rv = EventBasedReplView(view, ReplWrapper(repl), settings.get("repl")["syntax"], None)
         except Exception as e:
             self.window.status_message(f"REPL-spawning failure {str(e)}")
         #rv.call_on_close.append(self._delete_repl)
         session.repl_views.append(rv)
         sublimerepl.manager.repl_views[rv.repl.id] = rv
         view.set_scratch(True)
-        view.set_name(f"🖵 sly {repl.channel.id}")
+        affixes = settings.get("repl")["view_title_affixes"]
+        view.set_name(affixes[0] + str(repl.channel.id) + affixes[1])
         return rv
     except Exception as e:
         traceback.print_exc()

@@ -1,0 +1,22 @@
+{
+	"maximum_timeout": 1,
+	"default_connexion_parameters": {
+		"hostname": "localhost",
+		"port": 4005
+	},
+	"debug": true,
+	"repl": {
+		"prompt": "〉",
+		"error": [" ｢", "｣"],
+		"syntax":"Packages/Lisp/Lisp.tmLanguage",
+		"view_affixes": ["🖵 sly ", ""],
+		"value_prefix": "⟹ "
+	},
+	"apropos": {
+		"max_width": 60
+	},
+	"debugger": {
+		"header_affixes": ["⎉ Debugger level ", ""],
+		"view_affixes": ["⎉ ","]"]
+	}
+}
