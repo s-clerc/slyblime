@@ -16,12 +16,13 @@ from dataclasses import dataclass, make_dataclass
 
 @dataclass
 class Classification:
-    regex: Union[str, re.Pattern]
+    regex: str
     kind: str = KIND_ID_AMBIGUOUS
     symbol: str = ""
     long_symbol: bool = False
     short_annotation: bool = False
     short_box: bool = False
+    compiled_regex: re.Pattern = None
 
 @dataclass
 class Classifier:
@@ -45,7 +46,7 @@ def convert_display_completion(display_completion):
 
 def determine_display(namespaces, classifier):
     for π in classifier.classifications:
-        if not π.regex.match(namespaces[0]):
+        if not π.compiled_regex.match(namespaces[0]):
             continue
         # Following computations are used everywhere
         is_short = len(namespaces) < 2
@@ -79,7 +80,7 @@ def create_completion_item(completion, classifier):
         details=f"Match: {int(completion.probability*1000)} ‰")
 
 def get_classifier(syntax):
-    classifiers = sly.settings.get("completion")["classifiers"]
+    classifiers = sly.settings().get("completion")["classifiers"]
     for classifier in classifiers:
         print(classifier["syntax_regex"])
         if re.findall(classifier["syntax_regex"], syntax):
@@ -88,7 +89,7 @@ def get_classifier(syntax):
 def convert_classifier(classifier):
     def prepare_classification(classification):
         classification = Classification(**classification)
-        classification.regex = re.compile(classification.regex)
+        classification.compiled_regex = re.compile(classification.regex)
         return classification
     return Classifier(
         classifier["name"],
@@ -97,8 +98,6 @@ def convert_classifier(classifier):
         classifier["symbol_for_homonyms"])
 
 class SlyCompletionListener(sublime_plugin.EventListener):
-
-
     def on_query_completions(self, view, pattern, locations):
         if not (classifier := get_classifier(view.settings().get("syntax"))):
             print(f"Cannot class {classifier}")
@@ -107,7 +106,7 @@ class SlyCompletionListener(sublime_plugin.EventListener):
         try:
             completions = asyncio.run_coroutine_threadsafe(
                 session.slynk.completions(pattern), 
-                session.loop).result(sly.settings.get("maximum_timeout"))
+                session.loop).result(sly.settings().get("maximum_timeout"))
         except Exception as e:
             session.window.status_message("Failed to fetch completion")
             print(e)
