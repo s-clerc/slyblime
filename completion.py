@@ -3,16 +3,32 @@ import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
 
+from typing import *
+
 from . import slynk, util, sexpdata, sly
 import logging
 import functools
 import uuid
 from html import escape
-
+import re
 from . import pydispatch
-from dataclasses import dataclass
+from dataclasses import dataclass, make_dataclass
 
+@dataclass
+class Classification:
+    regex: Union[str, re.Pattern]
+    kind: str = KIND_ID_AMBIGUOUS
+    symbol: str = ""
+    long_symbol: bool = False
+    short_annotation: bool = False
+    short_box: bool = False
 
+@dataclass
+class Classifier:
+    name: str
+    syntax_regex: str
+    classifications: List[Classification]
+    symbol_for_homonyms: str = ""
 
 @dataclass
 class DisplayCompletion:
@@ -27,47 +43,31 @@ def convert_display_completion(display_completion):
              display_completion.boxed_type),
             display_completion.annotation)
 
-def determine_kind(kinds):
-    type = kinds[0] if len(kinds) > 0 else None
-    def kind(indicator, symbol, long_symbol=False, short_annotation=False, short_box=False):
-        nonlocal kinds
+def determine_display(kinds, classifier):
+    for π in classifier.classifications:
+        if not π.regex.match(kinds[0]):
+            continue
+
         is_short = len(kinds) < 2
         description = " ".join([kind.capitalize() for kind in kinds])
+
+        symbol = π.symbol if is_short or π.long_symbol else classifier.symbol_for_homonyms
+        annotation = description if π.short_annotation or not is_short else ""
+        if len(kinds[0]) == 0:
+            boxed_type = "​Unknown"
+        elif π.short_box or not is_short:
+            boxed_type = description
+        else:
+            boxed_type = ""
+
         return DisplayCompletion(
-                indicator, 
-                symbol if is_short or long_symbol else "…", 
-                description if short_annotation or not is_short else "",
-                description if short_box or not is_short else "")
+            globals()[π.kind], 
+            symbol, 
+            annotation, 
+            boxed_type)
 
-    result = None
-    if type == "fn":
-        result = kind(KIND_ID_FUNCTION, "")
-    elif type == "generic-fn":
-        result = kind(KIND_ID_FUNCTION, "g")
-    elif type == "var":
-        result = kind(KIND_ID_VARIABLE, "")
-    elif type == "type": 
-        result = kind(KIND_ID_TYPE, "")
-    elif type == "pak":
-        result = kind(KIND_ID_NAMESPACE, "")
-    elif type == "cla":
-        result = kind(KIND_ID_AMBIGUOUS, "C")
-    elif type == "macro":
-        result = kind(KIND_ID_AMBIGUOUS, "⎈", short_box=True)
-    elif type == "constant":
-        result = kind(KIND_ID_VARIABLE, "π", short_box=True)
-    # It seems like most special operators are also functions os
-    elif type == "special-op" and (len(kinds) < 2 or kinds[1] == "fn"):
-        result = kind(KIND_ID_KEYWORD, "⎇", True)
-    else:
-        result = kind(KIND_ID_AMBIGUOUS, "", short_box=True)
-
-    if len(kinds[0]) == 0:
-         result.boxed_type = "​Unknown"
-    return convert_display_completion(result)
-
-def create_completion_item(completion):
-    kind, annotation = determine_kind(completion.kind)
+def create_completion_item(completion, classifier):
+    kind, annotation = convert_display_completion(determine_display(completion.kind, classifier))
     return CompletionItem(
         trigger=completion.name,
         completion=completion.name,
@@ -76,12 +76,30 @@ def create_completion_item(completion):
         annotation=annotation,
         details=f"Match: {int(completion.probability*1000)} ‰")
 
+def get_classifier(syntax):
+    classifiers = sly.settings.get("completion")["classifiers"]
+    for classifier in classifiers:
+        print(classifier["syntax_regex"])
+        if re.findall(classifier["syntax_regex"], syntax):
+            return convert_classifier(classifier)
+
+def convert_classifier(classifier):
+    def prepare_classification(classification):
+        classification = Classification(**classification)
+        classification.regex = re.compile(classification.regex)
+        return classification
+    return Classifier(
+        classifier["name"],
+        classifier["syntax_regex"],
+        [prepare_classification(c) for c in classifier["classifications"]],
+        classifier["symbol_for_homonyms"])
+
 class SlyCompletionListener(sublime_plugin.EventListener):
-    def should_complete(self, view):
-        return "LISP" in view.settings().get("syntax").upper()
+
 
     def on_query_completions(self, view, pattern, locations):
-        if not self.should_complete(view):
+        if not (classifier := get_classifier(view.settings().get("syntax"))):
+            print(f"Cannot class {classifier}")
             return None
         session = sly.getSession(view.window().id())
         try:
@@ -92,6 +110,6 @@ class SlyCompletionListener(sublime_plugin.EventListener):
             session.window.status_message("Failed to fetch completion")
             print(e)
             return
-        return ([create_completion_item(completion) for completion in completions],
+        return ([create_completion_item(completion, classifier) for completion in completions],
                 INHIBIT_WORD_COMPLETIONS|INHIBIT_EXPLICIT_COMPLETIONS)
 
