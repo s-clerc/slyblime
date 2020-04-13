@@ -10,14 +10,19 @@ from .slynk import slynk
 import logging
 import functools
 
-settings = load_settings("sly.sublime-settings")
-DEFAULT_CONNEXION_PARAMETERS = settings.get("default_connexion_parameters")
+_settings = None
+
+def settings():
+    global _settings
+    if "_settings()" not in globals():
+        _settings = load_settings("sly.sublime-settings")
+    return _settings
 
 if "sessions" not in globals():
     print("Preparing stuff for SLY")
     sessions = {}
     loop = asyncio.new_event_loop()
-    if settings.get("debug"):
+    if settings().get("debug"):
         loop.set_debug(True)
         logging.basicConfig(level=logging.DEBUG)
 
@@ -89,8 +94,10 @@ class SlynkSession:
 
 
 class ConnectSlynkCommand(sublime_plugin.WindowCommand):
-    def run(self, host=DEFAULT_CONNEXION_PARAMETERS["hostname"], port=DEFAULT_CONNEXION_PARAMETERS["port"]):  # implement run method
+    def run(self, host=None, port=None):  # implement run method
         global loop
+        host = settings().get("default_connexion_parameters")["hostname"] if host is None else host
+        port = settings().get("default_connexion_parameters")["port"] if port is None else port
         session = SlynkSession(host, port, self.window, loop)
         if not loop.is_running():
             threading.Thread(target=loop.run_forever).start()
