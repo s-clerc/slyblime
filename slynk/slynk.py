@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Tuple, Optional
+from typing import *
 
 from ..pydispatch import Dispatcher
 
@@ -73,10 +73,17 @@ class Location:
     position: Optional[Position] = None
     source_form: Optional[str] = None
 
-
+@dataclass
 class Definition:
     label: str
     location: Location
+
+@dataclass
+class Completion:
+    name: str
+    probability: float
+    match_locations: List[List[Union[int, str]]]
+    kind: str
 
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
@@ -332,7 +339,6 @@ class SlynkClient(Dispatcher):
         id = int(expression[2])
         if id in self.request_table:
             request = self.request_table[id]
-            print("Promise fulfilled for" + str(request))
             del self.request_table[id]
             if request.future.cancelled():
                 return
@@ -405,10 +411,8 @@ class SlynkClient(Dispatcher):
         return repl
 
     async def prepare(self, path=pathlib.Path().parent.absolute()):
-        print("now prep")
          # Missing C-P-C, Fuzzy, Presentations from SLIMAß
         await self.add_load_paths(f"{path}/sly/contrib/")
-        print("first done")
         await self.require(
             ["slynk/indentation",
              "slynk/stickers",
@@ -417,7 +421,6 @@ class SlynkClient(Dispatcher):
              "slynk/fancy-inspector",
              "slynk/mrepl",
              "slynk/arglists"])
-        print("Slynk prepared")
         #await self.rex("SLYNK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
         #await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
@@ -455,16 +458,15 @@ class SlynkClient(Dispatcher):
     async def apropos(self, pattern, external_only=True, case_sensitive=False, *args):
         command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
         propos_list = await self.rex(command, "T", *args)
-        print("Apropos obtained")
         x = [property_list_to_dict(plist) for plist in propos_list]
-        print("AP PROC")
         return x
 
-    async def autocomplete(self, prefix, package):
-        prefix = dumps(prefix)
-        command = f"SLYNK:SIMPLE-COMPLETIONS {prefix} \"{package}\""
+    async def completions(self, pattern, package=DEFAULT_PACKAGE, flex=True):
+        pattern = dumps(pattern)
+        command = f"SLYNK-COMPLETION:{'FLEX' if flex else 'SIMPLE'}-COMPLETIONS (QUOTE {pattern}) \"{package}\""
         response = await self.rex(command, "T", package)
-        return [str(completion) for completion in response[0]] if len(response) > 0 else []
+        return [Completion(*completion[:-1], completion[3].split(",")) 
+                for completion in response[0]]
 
     async def eval(self, expression_string, *args):
         package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
@@ -482,7 +484,6 @@ class SlynkClient(Dispatcher):
             expression[2],  # Level
             expression[3][0],  # Title
             expression[3][1],  # Type
-            # Restarts
             [(str(restart[0]), str(restart[1])) for restart in expression[4]],
             # Stack frames
             [(int(frame[0]), str(frame[1]), is_restartable(frame)) for frame in expression[5]]
