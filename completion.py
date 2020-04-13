@@ -43,17 +43,19 @@ def convert_display_completion(display_completion):
              display_completion.boxed_type),
             display_completion.annotation)
 
-def determine_display(kinds, classifier):
+def determine_display(namespaces, classifier):
     for π in classifier.classifications:
-        if not π.regex.match(kinds[0]):
+        if not π.regex.match(namespaces[0]):
             continue
-
-        is_short = len(kinds) < 2
-        description = " ".join([kind.capitalize() for kind in kinds])
-
-        symbol = π.symbol if is_short or π.long_symbol else classifier.symbol_for_homonyms
-        annotation = description if π.short_annotation or not is_short else ""
-        if len(kinds[0]) == 0:
+        # Following computations are used everywhere
+        is_short = len(namespaces) < 2
+        description = " ".join([flavor.capitalize() for flavor in namespaces])
+        
+        # We need to make sure that if there is no namespaces information
+        # we shown "unknown" in the typebox.
+        if len(namespaces[0]) == 0:
+            # A zero-width space is used to avoid
+            # overwriting the empty symbol
             boxed_type = "​Unknown"
         elif π.short_box or not is_short:
             boxed_type = description
@@ -62,12 +64,12 @@ def determine_display(kinds, classifier):
 
         return DisplayCompletion(
             globals()[π.kind], 
-            symbol, 
-            annotation, 
+            π.symbol if is_short or π.long_symbol else classifier.symbol_for_homonyms, 
+            description if π.short_annotation or not is_short else "", 
             boxed_type)
 
 def create_completion_item(completion, classifier):
-    kind, annotation = convert_display_completion(determine_display(completion.kind, classifier))
+    kind, annotation = convert_display_completion(determine_display(completion.namespaces, classifier))
     return CompletionItem(
         trigger=completion.name,
         completion=completion.name,
