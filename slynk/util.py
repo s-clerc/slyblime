@@ -69,13 +69,15 @@ class Repl(Dispatcher):
         
 
 
-def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True):
+def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True, replace_dash_with_underscore=True):
     def parse_symbol(key):
         nonlocal remove_colon_from_keyword
         nonlocal lower_keys
         key = str(key)
         if remove_colon_from_keyword and key[0] == ":":
             key = key[1:]
+        if replace_dash_with_underscore:
+            key = key.replace("-", "_")
         return key.lower()
     return {parse_symbol(key): value 
             for key, value in zip(plist[::2], plist[1::2])}

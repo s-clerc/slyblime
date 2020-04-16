@@ -14,6 +14,7 @@ from .util import *
 
 import pathlib
 
+
 @dataclass
 class DebugEventData:
     thread: str = None
@@ -23,12 +24,14 @@ class DebugEventData:
     restarts: list = None
     stack_frames: list = None
 
+
 @dataclass
 class PromisedRequest:
     id: int
     command: str
     package: str
     future: Any
+
 
 @dataclass
 class StackFrameLocal:
@@ -73,10 +76,12 @@ class Location:
     position: Optional[Position] = None
     source_form: Optional[str] = None
 
+
 @dataclass
 class Definition:
     label: str
     location: Location
+
 
 @dataclass
 class Completion:
@@ -84,6 +89,23 @@ class Completion:
     probability: float
     match_locations: List[List[Union[int, str]]]
     namespaces: List[str]
+    
+class DictAsObject(object):
+    def __init__(self, dict):
+        self.__dict__ = dict
+
+@dataclass
+class ConnexionInformation:
+    pid: int = None
+    style: str = None
+    encoding: DictAsObject = None
+    lisp_implementation: DictAsObject = None
+    machine: DictAsObject = None
+    features: List[str] = None
+    modules: List[str] = None
+    package: str = None
+    version: str = None
+
 
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
@@ -183,6 +205,7 @@ class SlynkClient(Dispatcher):
         self.closed_future = None
         self.debug_data = None
         self.repls = []
+        self.connexion_info = None
 
     async def connect(self, *args):
         if len(args) > 0:
@@ -197,6 +220,7 @@ class SlynkClient(Dispatcher):
                             __aio_loop__=self.loop)
         await self.loop.create_connection(lambda: self.connexion,
                                           self.host, self.port)
+        await self.update_connexion_info()
         self.closed_future = self.loop.create_future()
 
     async def closed(self):
@@ -756,6 +780,34 @@ class SlynkClient(Dispatcher):
         print("Disconnect called")
         self.send_message("(:emacs-channel-send 1 (:teardown))")
         self.loop.call_soon(self.connexion.transport.close)
+
+    async def get_connexion_info(self):
+        as_dict = None
+
+        def convert(property):
+            return DictAsObject(property_list_to_dict(as_dict[property]))
+
+        data = await self.rex("SLYNK:CONNECTION-INFO", "T")
+        as_dict = property_list_to_dict(data)
+        
+        #Pythonifying internal datastructures.
+        return ConnexionInformation(
+            as_dict["pid"],
+            s[1:] if (s := str(as_dict["style"]))[0] == ":" else s,
+            convert("encoding"),
+            convert("lisp_implementation"),
+            convert("machine"),
+                # Remove colon from start of keyword
+            [str(feature)[1:] for feature in as_dict["features"]],
+            as_dict["modules"],
+            convert("package"),
+            as_dict["version"]
+            )
+
+    async def update_connexion_info(self):
+        self.connexion_info = await self.get_connexion_info()
+        return self.connexion_info
+
 
 class TestListener:
     def __init__(self, client: SlynkClient, loop):
