@@ -83,7 +83,6 @@ def create_completion_item(completion, classifier):
 def get_classifier(syntax):
     classifiers = sly.settings().get("completion")["classifiers"]
     for classifier in classifiers:
-        print(classifier["syntax_regex"])
         if re.findall(classifier["syntax_regex"], syntax):
             return convert_classifier(classifier)
 
@@ -102,7 +101,6 @@ def convert_classifier(classifier):
 class SlyCompletionListener(sublime_plugin.EventListener):
     def on_query_completions(self, view, pattern, locations):
         if not (classifier := get_classifier(view.settings().get("syntax"))):
-            print(f"Cannot class {classifier}")
             return None
         session = sly.getSession(view.window().id())
         try:
