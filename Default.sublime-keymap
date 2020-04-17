@@ -12,5 +12,8 @@
 			{ "key": "setting.repl", "operator": "equal", "operand": true },
 			{ "key": "setting.auto_complete_commit_on_tab", "operand": true }
 		]
-	}
+	},
+	{ "keys": ["primary+'"], "command": "sly_compile_top_level", "args": {},
+	  "context":[]
+	},
 ]

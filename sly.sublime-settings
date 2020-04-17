@@ -74,6 +74,7 @@
     ]
   },
   "compilation": {
+    "max_search_iterations": 100,
     "highlight_duration": 2,
     "highlight_form_scope": "storage.type.function-type.lisp"
   }
