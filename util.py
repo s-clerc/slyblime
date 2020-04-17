@@ -40,20 +40,27 @@ async def show_quick_panel(session, items, flags, selected_index=0, on_highlight
     await future
     return future.result()
 
+
+def find_closest_before_point(view, point, regex):
+    possibilities = view.find_all(regex)
+    i = bisect_left(
+        [possibility.begin() for possibility in possibilities], 
+        point) - 1
+    if i < 0:
+        return None
+    return possibilities[i]
+
+
 PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
 IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
+
 
 # I misunderstood what SLY-CURRENT-PACKAGE did and wrote this
 # but use the one below this one as this one is not tested.
 def determine_package_at_point(view, slynk, point):
-    possibilities = view.find_all(PACKAGE_REGEX)
-    i = bisect_left(
-        [possibility[1] for possibility in possibilities], 
-        point) - 1
-    if i < 0:
-        return None
+    region = find_closest_before_point(view, point, PACKAGE_REGEX)
     # Ignore the IN-PACKAGE symbol.
-    statement = loads(view.substr(possibilities[i]))[1:]
+    statement = loads(view.substr(region))[1:]
     lisp = slynk.connexion_info.lisp_implementation.name
     
     ignore_next = False
@@ -69,16 +76,12 @@ def determine_package_at_point(view, slynk, point):
         else:
             return symbol
 
+
 # Equivalent to SLY-CURRENT-PACKAGE in output.
 def in_package_parameters_at_point(view, point):
-    possibilities = view.find_all(PACKAGE_REGEX)
-    i = bisect_left(
-        [possibility.begin() for possibility in possibilities], 
-        point) - 1
-    if i < 0:
-        return None
+    region = find_closest_before_point(view, point, PACKAGE_REGEX)
     # Remove the IN-PACKAGE symbol.
-    return IN_PACKAGE_REGEX.sub("", view.substr(possibilities[i])[1:-1])
+    return IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
 
 
 
