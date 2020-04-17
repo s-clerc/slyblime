@@ -660,13 +660,26 @@ class SlynkClient(Dispatcher):
                 print(f"Error find_definitions failed to parse {raw_definition}")
         return definitions
 
-    async def compile_string(self, string, filename, full_filename, position, *args):
-        command = f"SLYNK:COMPILE-STRING-FOR-EMACS {dumps(string)} {dumps(filename)} ((:POSITION {str(position)})) {dumps(full_filename)} 'NIL"
-        result = await self.rex(command, "T", *args)
+    async def compile_string(self, string, buffer_name, file_name, position, 
+                                compilation_policy="'NIL", package=DEFAULT_PACKAGE):
+        if type(position) == tuple and len(position) > 2:
+            position = f"(:POSITION {position[0]}) (:LINE {position[1]} {position[2]})" 
+        else:
+            position = f"(:POSITION {position})"
+
+        command = " ".join(
+            ["SLYNK:COMPILE-STRING-FOR-EMACS",
+             dumps(string),
+             dumps(buffer_name),
+             f"(QUOTE ({position}))",
+             dumps(file_name),
+             str(compilation_policy)])
+
+        result = await self.rex(command, "T", package)
         return self.on_compilation(result, *args)
 
-    async def compile_file(self, filename, load=True, *args):
-        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(filename)} {dumps(load)}", "T", *args)
+    async def compile_file(self, file_name, load=True, *args):
+        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(load)}", "T", *args)
         return self.on_compilation(result, *args)
 
     async def on_compilation(self, result, package=DEFAULT_PACKAGE):
