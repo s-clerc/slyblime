@@ -72,5 +72,9 @@
         ]
       }
     ]
+  },
+  "compilation": {
+    "highlight_duration": 2,
+    "highlight_form_scope": "storage.type.function-type.lisp"
   }
 }
