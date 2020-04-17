@@ -59,6 +59,7 @@ IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 # but use the one below this one as this one is not tested.
 def determine_package_at_point(view, slynk, point):
     region = find_closest_before_point(view, point, PACKAGE_REGEX)
+    if region is None: return region
     # Ignore the IN-PACKAGE symbol.
     statement = loads(view.substr(region))[1:]
     lisp = slynk.connexion_info.lisp_implementation.name
@@ -81,6 +82,7 @@ def determine_package_at_point(view, slynk, point):
 def in_package_parameters_at_point(view, point):
     region = find_closest_before_point(view, point, PACKAGE_REGEX)
     # Remove the IN-PACKAGE symbol.
+    if region is None: return region
     return IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
 
 
