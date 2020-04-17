@@ -1,11 +1,11 @@
 [
   {
     "caption": "Sly",
-    "id": "slims",
+    "id": "Sly",
     "children": [
       {
-        "caption": "Test",
-        "command": "zucker"
+        "caption": "Compile Selection",
+        "command": "sly_compile_selection"
       },
     ]
   }
