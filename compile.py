@@ -134,10 +134,8 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
 
 class SlyCompileFile(sublime_plugin.WindowCommand):
     def run(self, load=False):
-        global loop
         session = getSession(self.window.id())
         path = self.window.active_view().file_name()
-        name = self.window.active_view().name()
         if path is None:
             self.window.status_message(
                 "File does not have path and cannot be compiled")
@@ -155,7 +153,14 @@ async def compile_file(window, session, path, name, load):
         compilation_results[str(path)] = result
         if not result.success:
             try:
-                show_notes_as_regions(window, path, result)
+                if load: 
+                    window.status_message("Loading cancelled due to unsuccessful compilation")
+                else:
+                    window.status_message("Compilation encountered at least one error")
+                if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
+                    show_notes_as_regions(window, path, result)
+                else: 
+                    show_notes_view(window, path, name, result)
             except Exception as e:
                 print(f"fail {e}")
 
