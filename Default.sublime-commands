@@ -26,7 +26,7 @@
     "command": "sly_compile_file"
   },
   {
-    "caption": "Sly: Compile and load file",
+    "caption": "Sly: Compile and load file ",
     "command": "sly_compile_file",
     "args": {
       "load": true
@@ -37,5 +37,13 @@
     "caption": "Sly: Compilation notes for the current file",
     "command": "sly_show_notes_view"
   
-  }
+  },
+  {
+    "caption": "Sly: Compile and load file ignoring errors",
+    "command": "sly_compile_file",
+    "args": {
+      "load": "always"
+    },
+
+  },
 ]
