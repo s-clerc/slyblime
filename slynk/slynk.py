@@ -676,16 +676,15 @@ class SlynkClient(Dispatcher):
              str(compilation_policy)])
 
         result = await self.rex(command, "T", package)
-        return self.on_compilation(result, *args)
+        return result
 
-    async def compile_file(self, file_name, load=True, *args):
-        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(load)}", "T", *args)
-        return self.on_compilation(result, *args)
-
-    async def on_compilation(self, result, package=DEFAULT_PACKAGE):
-        if not ([] in [result[2], result[4]]):  # Both are non-nil aka True.
-            result = await self.rex(f"SLYNK:LOAD-FILE {result[5]}", "T", package)
-            return result
+    async def compile_file(self, file_name, should_load=True, *args):
+        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(should_load)}", "T", *args)
+        # result is (:compilation-result tried success duration load? output-pathname)
+        indication = str(result[0]).lower()
+        if indication == ":compilation-result" and should_load and result[2]:
+            await self.rex(f"SLYNK:LOAD-FILE {dumps(result[5])}", "T", *args)
+        return result
 
     async def expand(self, form, package=DEFAULT_PACKAGE, recursively=True, macros=True, compiler_macros=True):
         if macros and compiler_macros:
