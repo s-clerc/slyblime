@@ -153,9 +153,9 @@ async def compile_file(window, session, path, name, load):
         compilation_results[str(path)] = result
         if not result.success:
             try:
-                if load: 
+                if load == True: 
                     window.status_message("Loading cancelled due to unsuccessful compilation")
-                else:
+                elif load == False:
                     window.status_message("Compilation encountered at least one error")
                 if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
                     show_notes_as_regions(window, path, result)
