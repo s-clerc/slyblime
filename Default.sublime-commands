@@ -52,7 +52,7 @@
 
   },
     {
-    "caption": "Sly: Remove compilation note regions",
+    "caption": "Sly: Clear compilation notes",
     "command": "sly_remove_note_highlighting",
 
   },
