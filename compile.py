@@ -145,6 +145,13 @@ class SlyCompileFile(sublime_plugin.WindowCommand):
             compile_file(self.window, session, path, basename(path), load),
             loop)
 
+    def is_visible(self, **kwargs):
+        view = self.window.active_view()
+        matches = re.findall(
+            settings().get("compilation")["syntax_regex"], 
+            view.settings().get("syntax"))
+        return len(matches) > 0
+
 
 async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
@@ -284,6 +291,10 @@ class SlyShowNotesViewCommand(sublime_plugin.WindowCommand):
         path = self.window.active_view().file_name()
         show_notes_view(self.window, path, basename(path), compilation_results[str(path)])
 
+    def is_visible(self, **kwargs):
+        path = self.window.active_view().file_name()
+        return path in compilation_results
+
 
 class SlyLoadFileCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
@@ -295,10 +306,17 @@ class SlyLoadFileCommand(sublime_plugin.WindowCommand):
         result = compilation_results[path]
         asyncio.run_coroutine_threadsafe(session.slynk.load_file(path), loop)
 
+    def is_visible(self, **kwargs):
+        path = self.window.active_view().file_name()
+        return path in compilation_results
+
 class SlyRemoveNoteHighlighting(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         session = getSession(self.window.id())
         self.window.active_view().erase_regions("sly-compilation-notes")
+
+    def is_visible(self, **kwargs):
+        return len(self.window.active_view().get_regions("sly-compilation-notes")) > 0
 
 
 
