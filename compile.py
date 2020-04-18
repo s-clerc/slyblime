@@ -1,4 +1,8 @@
 import uuid
+from html import escape, unescape
+import json
+from os.path import basename
+import re
 
 from sublime import *
 import sublime_plugin, threading, asyncio  # import the required modules
@@ -7,17 +11,19 @@ from SublimeREPL import sublimerepl
 from SublimeREPL.repls import repl
 
 from . import pydispatch
-from . import slynk, util, sexpdata
 from .sly import *
+from . import slynk, util, sexpdata
 
+def add_regions_temporarily(view, regions, duration, *args):
+    id = uuid.uuid4().hex
+    view.add_regions(id, regions, *args)
+    set_timeout_async(lambda: view.erase_regions(id), duration)
 
 def highlight_region (view, region, duration=None):
     config = settings().get("compilation")
     if not duration:
        duration = config['highlight_duration'] * 1000
-    id = uuid.uuid4().hex
-    view.add_regions(id, [region], config["highlight_form_scope"], "")
-    set_timeout_async(lambda: view.erase_regions(id), duration)
+    add_regions_temporarily(view, [region], duration, config["highlight_form_scope"], "")
 
 
 def compile_region(view, window, session, region):
@@ -127,15 +133,75 @@ class SlyCompileFile(sublime_plugin.WindowCommand):
         global loop
         session = getSession(self.window.id())
         path = self.window.active_view().file_name()
+        name = self.window.active_view().name()
         if path is None:
             self.window.status_message(
                 "File does not have path and cannot be compiled")
             return
-        print(load)
+
         asyncio.run_coroutine_threadsafe(
-            session.slynk.compile_file(path, load),
+            compile_file(self.window, session, path, basename(path), load),
             loop)
 
 
+async def compile_file(window, session, path, name, load):
+    result = await session.slynk.compile_file(path, load)
+    print(result)
+    if type(result) != list:
+        # When there is no file the result will be stored under "None"
+        compilation_results[str(result.path)] = result
+        if not result.success:
+            show_notes_view(window, name, result)
+
+if "compilation_results" not in globals():
+    compilation_results = {}
+
+def show_notes_view(window, name, result):
+    global compilation_notes
+    try:
+        affixes = settings().get("compilation")["notes_view"]["header_affixes"]
+        html = ('<html> <body id="sly-compilation-error-view">'
+                f'<h1>{escape(affixes[0] + str(name) + affixes[1])}</h1>')
+        index = 0
+        for note in result.notes:
+            location = note.location
+            path = escape(location["file"])
+            position = escape(str(location["position"]))
+            severity = escape(str(note.severity)[1:].capitalize())
+            html += (f'<h2>{severity}: {escape(note.message)} </h2>'
+                     f'<blockquote> {escape(location["snippet"])} </blockquote><br>'
+                     # We're using json.dumps because lazy
+                     f'<a href="{index}">{path} at {position}</a>')
+            index += 1
+        html += "</body></html>"
+        affixes = settings().get("compilation")["notes_view"]["view_title_affixes"]
+        title = affixes[0] + name + affixes[1]
+        window.new_html_sheet(title, html, "sly_compilation_error_url", {"path": str(result.path)})
+
+    except Exception as e:
+        window.status_message("Failed to open compilation notes view")
+        print(f"Exception while rendering notes view: {e} ")
+    
+class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
+    def run(self, url=None, path=""):
+        try:
+            always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
+            adjustment = settings().get("compilation")["notes_view"]["snippet_location_adjust"]
+
+            result = compilation_results[path]
+            location = result.notes[int(url)].location
+            point = location["position"]
+            path = location["file"]
+            view = self.window.find_open_file(path)
+            if view is None or always_reopen:
+                view = self.window.open_file(path)
+
+            view.show_at_center(point)
+            snippet_region = view.find(re.escape(location["snippet"]), point + adjustment)
+            highlight_region(view, snippet_region)
+            self.window.focus_view(view)
+        except Exception as e:
+            self.window.status_message("Failed to process URL")
+            print(f"SlyCompilationErrorUrlCommandException: {e}")
 
 
