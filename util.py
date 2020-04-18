@@ -55,10 +55,17 @@ PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)
 IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 
 # Equivalent to SLY-CURRENT-PACKAGE in output.
+def in_package_parameters_at_point(view, point, return_region=False):
     region = find_closest_before_point(view, point, PACKAGE_REGEX)
     # Remove the IN-PACKAGE symbol.
-    if region is None: return region
-    return IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
+    if region is None: 
+        if return_region: return None, None 
+        return region
+
+    info = IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
+
+    if return_region:
+        return info, region
 
 
 
