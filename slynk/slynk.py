@@ -717,10 +717,14 @@ class SlynkClient(Dispatcher):
         result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(should_load)}", "T", *args)
         # result is (:compilation-result notes success duration load? output-pathname)
         indication = str(result[0]).lower()
-        if indication == ":compilation-result" and should_load and result[2] and result[5]:
-            await self.rex(f"SLYNK:LOAD-FILE {dumps(result[5])}", "T", *args)
-        elif indication == ":compilation-result":
-            return self.parse_compilation_information(result)
+        if indication == ":compilation-result":
+            result = self.parse_compilation_information(result)
+            if should_load and (result.success or should_load == "always") and result.path:
+                await self.load_file(result.path, *args)
+        return result
+
+    async def load_file(self, file_name, *args):
+        result = await self.rex(f"SLYNK:LOAD-FILE {dumps(file_name)}", "T", *args)
         return result
 
     async def expand(self, form, package=DEFAULT_PACKAGE, recursively=True, macros=True, compiler_macros=True):
