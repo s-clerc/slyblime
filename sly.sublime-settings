@@ -76,7 +76,7 @@
   "compilation": {
     "max_search_iterations": 100,
     "highlight_duration": 2,
-    "highlight_form_scope": "storage.type.function-type.lisp",
+    "highlight_form_scope": "region.bluish",
     "notes_view": {
       "header_affixes": ["¡", "!"],
       "view_title_affixes": ["¡ ", "!"],
@@ -84,8 +84,8 @@
       "snippet_location_adjust": -2,
       "prefer_integrated_notes": true,
       "note_regions": {
-        "highlight_scope": "keyword",
-        "dimensions": [1000, 1000]
+        "highlight_scope": "region.redish",
+        "dimensions": [1000, 1000],
     }
     },
   },
