@@ -66,21 +66,21 @@ class Repl(Dispatcher):
 
     def process(self, input):
         self.channel.send_message(f"(:PROCESS {dumps(input)})")
-        
 
 
-def property_list_to_dict(plist, lower_keys=True, remove_colon_from_keyword=True, replace_dash_with_underscore=True):
-    def parse_symbol(key):
-        nonlocal remove_colon_from_keyword
-        nonlocal lower_keys
+def parse_symbol(key, lower_keys=True, remove_colon_from_keyword=True, replace_dash_with_underscore=True):
         key = str(key)
         if remove_colon_from_keyword and key[0] == ":":
             key = key[1:]
         if replace_dash_with_underscore:
             key = key.replace("-", "_")
-        return key.lower()
-    return {parse_symbol(key): value 
+        return key.lower() if lower_keys else key
+
+def property_list_to_dict(plist, *args):
+    return {parse_symbol(key, *args): value 
             for key, value in zip(plist[::2], plist[1::2])}
 
-
+def association_list_to_dict(alist, preserve_list=False, *args):
+    return {parse_symbol(values[0], *args): (values[1:] if preserve_list else values[1])
+            for values in alist}
 
