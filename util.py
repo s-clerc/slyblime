@@ -54,32 +54,7 @@ def find_closest_before_point(view, point, regex):
 PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
 IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 
-
-# I misunderstood what SLY-CURRENT-PACKAGE did and wrote this
-# but use the one below this one as this one is not tested.
-def determine_package_at_point(view, slynk, point):
-    region = find_closest_before_point(view, point, PACKAGE_REGEX)
-    if region is None: return region
-    # Ignore the IN-PACKAGE symbol.
-    statement = loads(view.substr(region))[1:]
-    lisp = slynk.connexion_info.lisp_implementation.name
-    
-    ignore_next = False
-    for symbol in statement:
-        prefix = (symbol := str(symbol))[0:2]
-
-        if ignore_next: 
-            ignore_next = False
-        elif symbol == f"#-{lisp}":
-            ignore_next = True
-        elif prefix == "#+" and symbol != f"#+{lisp}":
-            ignore_next = True
-        else:
-            return symbol
-
-
 # Equivalent to SLY-CURRENT-PACKAGE in output.
-def in_package_parameters_at_point(view, point):
     region = find_closest_before_point(view, point, PACKAGE_REGEX)
     # Remove the IN-PACKAGE symbol.
     if region is None: return region
