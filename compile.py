@@ -214,19 +214,19 @@ def show_notes_view(window, path, name, result):
 class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
     def run(self, url=None, path=""):
         try:
-            always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
+            config = settings().get("compilation")["notes_view"]
 
             result = compilation_results[path]
             location = result.notes[int(url)].location
             point = location["position"]
             path = location["file"]
             view = self.window.find_open_file(path)
-            if view is None or always_reopen:
+            if view is None or config["always_reopen_file"]:
                 view = self.window.open_file(path, sublime.TRANSIENT)
 
             view.show_at_center(point)
             snippet_region = find_snippet_region(view, location["snippet"], point)
-            highlight_region(view, snippet_region)
+            highlight_region(view, snippet_region, None, config["note_regions"]["highlight_scope"])
             self.window.focus_view(view)
         except Exception as e:
             self.window.status_message("Failed to process URL")
