@@ -228,7 +228,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
 
 def show_notes_as_regions(window, path, result):
     always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
-    scope = settings().get("compilation")["notes_view"]["note_regions"]["highlight_scope"]
+    regional_settings = settings().get("compilation")["notes_view"]["note_regions"]
     view = window.find_open_file(path)
     if view is None or always_reopen:
         view = self.window.open_file(path, sublime.TRANSIENT)
@@ -236,13 +236,19 @@ def show_notes_as_regions(window, path, result):
     regions = []
     for note in result.notes:
         point = note.location["position"]
-        region = find_snippet_region(view, note.location["snippet"], point)
+        snippet = note.location["snippet"]
+        # Not a raw string intentionally VVVV
+        if regional_settings["ignore_snippet_after_\n"]:
+            snippet = snippet.split("\n", 1)[0] 
+        if regional_settings["strip_regions"]:
+            snippet = snippet.strip()
+        region = find_snippet_region(view, snippet, point)
         if region == None:
             region = Region(point, point)
         regions.append(region)
     # Because compilation_results is dictionary which may accept tuples:
     compilation_results[(path, "regions")] = regions
-    view.add_regions("sly-compilation-notes", regions, "invalid", "", DRAW_EMPTY)
+    view.add_regions("sly-compilation-notes", regions, regional_settings["highlight_scope"], "", DRAW_EMPTY)
     view.settings().set("path-for-sly-compilation-notes", path)
 
 class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
