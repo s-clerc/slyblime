@@ -3,6 +3,7 @@ from html import escape, unescape
 import json
 from os.path import basename
 import re
+from bisect import bisect_left
 
 from sublime import *
 import sublime_plugin, threading, asyncio  # import the required modules
@@ -14,10 +15,12 @@ from . import pydispatch
 from .sly import *
 from . import slynk, util, sexpdata
 
+
 def add_regions_temporarily(view, regions, duration, *args):
     id = uuid.uuid4().hex
     view.add_regions(id, regions, *args)
     set_timeout_async(lambda: view.erase_regions(id), duration)
+
 
 def highlight_region (view, region, duration=None):
     config = settings().get("compilation")
@@ -61,6 +64,7 @@ class SlyCompileSelection(sublime_plugin.TextCommand):
 
 def get_scopes(view, point):
     return view.scope_name(point).strip().split(" ")
+
 
 def determine_depth(scopes):
     depth = 0
@@ -148,15 +152,27 @@ async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
     print(result)
     if type(result) != list:
-        # When there is no file the result will be stored under "None"
-        compilation_results[str(result.path)] = result
+        compilation_results[str(path)] = result
         if not result.success:
-            show_notes_view(window, name, result)
+            try:
+                show_notes_as_regions(window, path, result)
+            except Exception as e:
+                print(f"fail {e}")
+
 
 if "compilation_results" not in globals():
     compilation_results = {}
 
-def show_notes_view(window, name, result):
+
+def find_snippet_region(view, snippet, point):
+    adjustment = settings().get("compilation")["notes_view"]["snippet_location_adjust"]
+    region = view.find(re.escape(snippet), point + adjustment)
+    if region.begin() == region.end() == -1:
+        return None
+    return region
+
+
+def show_notes_view(window, path, name, result):
     global compilation_notes
     try:
         affixes = settings().get("compilation")["notes_view"]["header_affixes"]
@@ -176,17 +192,17 @@ def show_notes_view(window, name, result):
         html += "</body></html>"
         affixes = settings().get("compilation")["notes_view"]["view_title_affixes"]
         title = affixes[0] + name + affixes[1]
-        window.new_html_sheet(title, html, "sly_compilation_error_url", {"path": str(result.path)})
+        window.new_html_sheet(title, html, "sly_compilation_error_url", {"path": str(path)})
 
     except Exception as e:
         window.status_message("Failed to open compilation notes view")
         print(f"Exception while rendering notes view: {e} ")
-    
+
+
 class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
     def run(self, url=None, path=""):
         try:
             always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
-            adjustment = settings().get("compilation")["notes_view"]["snippet_location_adjust"]
 
             result = compilation_results[path]
             location = result.notes[int(url)].location
@@ -194,14 +210,69 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             path = location["file"]
             view = self.window.find_open_file(path)
             if view is None or always_reopen:
-                view = self.window.open_file(path)
+                view = self.window.open_file(path, sublime.TRANSIENT)
 
             view.show_at_center(point)
-            snippet_region = view.find(re.escape(location["snippet"]), point + adjustment)
+            snippet_region = find_snippet_region(view, location["snippet"], point)
             highlight_region(view, snippet_region)
             self.window.focus_view(view)
         except Exception as e:
             self.window.status_message("Failed to process URL")
             print(f"SlyCompilationErrorUrlCommandException: {e}")
+
+
+def show_notes_as_regions(window, path, result):
+    always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
+    scope = settings().get("compilation")["notes_view"]["note_regions"]["highlight_scope"]
+    view = window.find_open_file(path)
+    if view is None or always_reopen:
+        view = self.window.open_file(path, sublime.TRANSIENT)
+    print(result.notes)
+    regions = []
+    for note in result.notes:
+        point = note.location["position"]
+        region = find_snippet_region(view, note.location["snippet"], point)
+        if region == None:
+            region = Region(point, point)
+        regions.append(region)
+    # Because compilation_results is dictionary which may accept tuples:
+    compilation_results[(path, "regions")] = regions
+    view.add_regions("sly-compilation-notes", regions, "invalid", "", DRAW_EMPTY)
+    view.settings().set("path-for-sly-compilation-notes", path)
+
+class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
+    def on_hover(self, view, point, zone):
+        if zone != HOVER_TEXT: return
+        path = view.settings().get("path-for-sly-compilation-notes")
+        if not path: return
+
+        dimensions = settings().get("compilation")["notes_view"]["note_regions"]["dimensions"]
+        result = compilation_results[path]
+        regions = compilation_results[(path, "regions")]
+
+        # Linear search since the regions are unsorted
+        hover_region_size = 100000
+        hover_region_index = -1
+        index = 0
+        for region in regions:
+            if (region.contains(point) 
+                and (hover_region_index == -1 or region.size() < hover_region_size)):
+                hover_region_size = region.size()
+                hover_region_index = index
+            index += 1
+        if hover_region_index < 0: return
+
+        note = result.notes[hover_region_index]
+        html = f"{note.severity[1:].capitalize()}: {note.message}"
+        view.show_popup(html, HIDE_ON_MOUSE_MOVE_AWAY, point, *dimensions)
+
+
+
+
+
+
+
+
+
 
 
