@@ -122,3 +122,20 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
         else:
             window.status_message("Failed to find nearby top-level form.")
 
+class SlyCompileFile(sublime_plugin.WindowCommand):
+    def run(self, load=False):
+        global loop
+        session = getSession(self.window.id())
+        path = self.window.active_view().file_name()
+        if path is None:
+            self.window.status_message(
+                "File does not have path and cannot be compiled")
+            return
+        print(load)
+        asyncio.run_coroutine_threadsafe(
+            session.slynk.compile_file(path, load),
+            loop)
+
+
+
+
