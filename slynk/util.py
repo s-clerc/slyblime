@@ -36,6 +36,7 @@ class Repl(Dispatcher):
         channel.bind(message_recieved=self.on_message)
         self.queue = queue.SimpleQueue()
         self.send_events = send_events
+        self.read_mode = False
 
     def play_events(self):
         while not self.queue.empty():
@@ -57,6 +58,11 @@ class Repl(Dispatcher):
             self.print("Closed from serverside")
             self.channel.is_open = False
             self.is_open = False
+        elif command == "set-read-mode":
+            if data[1].lower() == ":read":
+                self.read_mode = True
+            else:
+                self.read_mode = False
         command = command.replace("-", "_")
         if command in self._events_:
             self.emit(command, *data[1:])
@@ -65,7 +71,10 @@ class Repl(Dispatcher):
             self.emit("unknown", *data)
 
     def process(self, input):
+        if not self.read_mode:
+            input = input.strip() # Remove trailing whitespace for whatever reason
         self.channel.send_message(f"(:PROCESS {dumps(input)})")
+
 
 
 def parse_symbol(key, lower_keys=True, remove_colon_from_keyword=True, replace_dash_with_underscore=True):

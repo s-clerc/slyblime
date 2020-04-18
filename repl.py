@@ -13,8 +13,6 @@ from SublimeREPL import sublimerepl
 from SublimeREPL.repls import repl
 from . import pydispatch
 
-
-
 class ReplWrapper(repl.Repl):
     def __init__(self, slynk_repl):
         super().__init__("utf-8")
@@ -27,7 +25,8 @@ class ReplWrapper(repl.Repl):
         
     def write(self, to_write):
         print(to_write)
-        self.slynk_repl.process(to_write[:-1])
+        self.slynk_repl.process(to_write)
+
 
 class EventBasedReplView(sublimerepl.ReplView):
     def __init__(self, *args, **kwargs):
