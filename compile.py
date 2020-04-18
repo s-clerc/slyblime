@@ -140,7 +140,7 @@ class SlyCompileFile(sublime_plugin.WindowCommand):
             self.window.status_message(
                 "File does not have path and cannot be compiled")
             return
-
+        self.window.active_view().erase_regions("sly-compilation-notes")
         asyncio.run_coroutine_threadsafe(
             compile_file(self.window, session, path, basename(path), load),
             loop)
