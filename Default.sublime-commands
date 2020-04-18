@@ -46,4 +46,14 @@
     },
 
   },
+    {
+    "caption": "Sly: Load file if compiled",
+    "command": "sly_load_file",
+
+  },
+    {
+    "caption": "Sly: Remove compilation note regions",
+    "command": "sly_remove_note_highlighting",
+
+  },
 ]

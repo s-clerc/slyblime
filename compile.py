@@ -279,6 +279,20 @@ class SlyShowNotesViewCommand(sublime_plugin.WindowCommand):
         show_notes_view(self.window, path, basename(path), compilation_results[str(path)])
 
 
+class SlyLoadFileCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        session = getSession(self.window.id())
+        path = self.window.active_view().file_name()
+        if path not in compilation_results: 
+            self.window.status_message("Path to compiled file not found")
+            return
+        result = compilation_results[path]
+        asyncio.run_coroutine_threadsafe(session.slynk.load_file(path), loop)
+
+class SlyRemoveNoteHighlighting(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        session = getSession(self.window.id())
+        self.window.active_view().erase_regions("sly-compilation-notes")
 
 
 
