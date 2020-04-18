@@ -30,6 +30,12 @@
     "command": "sly_compile_file",
     "args": {
       "load": true
-    }
+    },
+
+  },
+  {
+    "caption": "Sly: Compilation notes for the current file",
+    "command": "sly_show_notes_view"
+  
   }
 ]

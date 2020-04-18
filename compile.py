@@ -272,9 +272,11 @@ class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
         view.show_popup(html, HIDE_ON_MOUSE_MOVE_AWAY, point, *dimensions)
 
 
-
-
-
+class SlyShowNotesViewCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        session = getSession(self.window.id())
+        path = self.window.active_view().file_name()
+        show_notes_view(self.window, path, basename(path), compilation_results[str(path)])
 
 
 
