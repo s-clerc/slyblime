@@ -107,6 +107,24 @@ class ConnexionInformation:
     version: str = None
 
 
+@dataclass
+class CompilationNote:
+    message: str = ""
+    severity: str = ""
+    location: Dict[str, Any] = None
+    references: list = None
+    source_context: Any = None
+
+@dataclass
+class CompilationResult:
+    notes: List[CompilationNote]
+    success: bool
+    duration: float
+    load: bool
+    path: str
+    # type which is always :compilation-result
+
+
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
     _events_ = [
         "reception",
@@ -660,6 +678,20 @@ class SlynkClient(Dispatcher):
                 print(f"Error find_definitions failed to parse {raw_definition}")
         return definitions
 
+    def parse_compilation_information(self, expression):
+        def parse_compilation_note(expression):
+            note = property_list_to_dict(expression)
+            note["location"] = association_list_to_dict(note["location"][1:])
+            note["severity"] = str(note["severity"])
+            return CompilationNote(**note)
+
+        return CompilationResult(
+            notes = [parse_compilation_note(note) for note in expression[1]],
+            success = True if expression[2] else False,
+            duration = expression[3] if expression[3] else None,
+            load = True if expression[4] else False,
+            path = expression[5] if expression[5] else None)
+
     async def compile_string(self, string, buffer_name, file_name, position, 
                                 compilation_policy="'NIL", package=DEFAULT_PACKAGE):
         if type(position) == tuple and len(position) > 2:
@@ -676,14 +708,19 @@ class SlynkClient(Dispatcher):
              str(compilation_policy)])
 
         result = await self.rex(command, "T", package)
+
+        if str(result[0]).lower() == ":compilation-result":
+            return self.parse_compilation_information(result)
         return result
 
     async def compile_file(self, file_name, should_load=True, *args):
         result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(should_load)}", "T", *args)
-        # result is (:compilation-result tried success duration load? output-pathname)
+        # result is (:compilation-result notes success duration load? output-pathname)
         indication = str(result[0]).lower()
-        if indication == ":compilation-result" and should_load and result[2]:
+        if indication == ":compilation-result" and should_load and result[2] and result[5]:
             await self.rex(f"SLYNK:LOAD-FILE {dumps(result[5])}", "T", *args)
+        elif indication == ":compilation-result":
+            return self.parse_compilation_information(result)
         return result
 
     async def expand(self, form, package=DEFAULT_PACKAGE, recursively=True, macros=True, compiler_macros=True):
