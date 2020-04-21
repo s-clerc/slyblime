@@ -29,6 +29,8 @@ class ReplWrapper(repl.Repl):
 
 
 class EventBasedReplView(sublimerepl.ReplView):
+    NEWLINE_SEQUENCE = "\n" # To allow for future configurability
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.repl.slynk_repl.bind(write_string=self.on_print,
@@ -39,6 +41,23 @@ class EventBasedReplView(sublimerepl.ReplView):
 
     def update_view_loop(self):
         return True
+
+    def get_final_character(self):
+        return self._view.substr(self._view.size()-1)
+
+    # Works exactly like (FRESH-LINE) in CL
+    def fresh_line(self):
+        if self.get_final_character() != self.NEWLINE_SEQUENCE:
+            self.write(self.NEWLINE_SEQUENCE)
+
+    def prevent_double_newline(self, to_write):
+        is_enabled = settings().get("repl")["avoid_double_newline"]
+        are_matching = self.get_final_character() == self.NEWLINE_SEQUENCE == to_write[0]
+        if is_enabled and are_matching:
+            return to_write[1:]
+        else:
+            return to_write
+
     # This is a placeholder so super.update_view_loop
     # can be called to close the REPL if needed.
     def handle_repl_output(self):
@@ -46,11 +65,13 @@ class EventBasedReplView(sublimerepl.ReplView):
 
     def on_print(self, message, *args):
         print(f"write: {message}")
-        self.write(str(message) + "\n")
+        #self.fresh_line()
+        self.write(self.prevent_double_newline(str(message)))
 
     def on_write_values(self, values, *args):
         for value in values:
-            self.write(settings().get("repl")['value_prefix'] + str(value[0]) + "\n")
+            self.fresh_line()
+            self.write(settings().get("repl")['value_prefix'] + str(value[0]))
 
     def on_prompt(self, package, prompt, error_level, *args):
         terminator = settings().get("repl")['prompt']
@@ -61,6 +82,7 @@ class EventBasedReplView(sublimerepl.ReplView):
         else:
             prompt = prompt + left + error_level + right + terminator
         # Write-prompt makes it glitch out for some reason idky
+        self.fresh_line()
         self.write(prompt)
 
 async def create_main_repl(session):
