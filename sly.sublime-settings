@@ -10,7 +10,8 @@
     "error": [" ｢", "｣"],
     "syntax": "Packages/Lisp/Lisp.tmLanguage",
     "view_title_affixes": ["🖵 sly ", ""],
-    "value_prefix": "⟹ "
+    "value_prefix": "⟹ ",
+    "avoid_double_newline": true
   },
   "apropos": {
     "max_width": 60
