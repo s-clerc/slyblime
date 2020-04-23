@@ -75,7 +75,7 @@ class EventBasedReplView(sublimerepl.ReplView):
 
     def on_print(self, message, *args):
         print(f"write: {message}")
-        #self.fresh_line()
+        self.fresh_line()
         self.write(self.prevent_double_newline(str(message)))
 
     def on_write_values(self, values, *args):
