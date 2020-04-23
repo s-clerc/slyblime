@@ -103,4 +103,11 @@ def in_package_parameters_at_point(view, point, return_region=False):
         return info, region
 
 
+def compute_flags(flags):
+    computed_flags = 0
+    for flag in flags:
+        computed_flags = computed_flags | globals()[flag.upper()]
+    return computed_flags
+
+
 
