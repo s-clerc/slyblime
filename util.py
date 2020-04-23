@@ -109,5 +109,11 @@ def compute_flags(flags):
         computed_flags = computed_flags | globals()[flag.upper()]
     return computed_flags
 
+def safe_int(value: str) -> int:
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
 
 
