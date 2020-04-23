@@ -43,7 +43,9 @@ class EventBasedReplView(sublimerepl.ReplView):
         super().__init__(*args, **kwargs)
         self.repl.slynk_repl.bind(write_string=self.on_print,
                                   write_values=self.on_write_values,
-                                  prompt=self.on_prompt)
+                                  prompt=self.on_prompt,
+                                  evaluation_aborted=self.on_evaluation_aborted,
+                                  server_side_repl_close=self.on_server_side_repl_close)
         self.repl.slynk_repl.play_events()
         self.value_phantom_groups = []
         self.backtrack_phantom_set = PhantomSet(self._view, "backtracking")
@@ -102,6 +104,15 @@ class EventBasedReplView(sublimerepl.ReplView):
         # Write-prompt makes it glitch out for some reason idky
         self.fresh_line()
         self.write(prompt)
+
+    def on_evaluation_aborted(self, *data):
+        self.fresh_line()
+        self.write("Evaluation aborted for " + " ".join(data))
+
+    def on_server_side_repl_close(self, *data):
+        # TODO set _killed to True if the connexion is lost but
+        # server_side_repl_close doesn't occur
+        super().update_view_loop()
 
     def show_backtrack_phantoms(self, value_region_group_index=None, value_index=None):
         if value_index is not None and value_region_group_index is not None:
