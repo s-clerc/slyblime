@@ -108,8 +108,8 @@ class SlyCompletionListener(sublime_plugin.EventListener):
                 session.slynk.completions(pattern), 
                 session.loop).result(sly.settings().get("maximum_timeout"))
         except Exception as e:
-            session.window.status_message("Failed to fetch completion")
-            print(e)
+            session.window.status_message(f"Failed to fetch completion for {pattern}")
+            print(f"Completion fetch exception: {e}")
             return
         return ([create_completion_item(completion, classifier) for completion in completions],
                 INHIBIT_WORD_COMPLETIONS|INHIBIT_EXPLICIT_COMPLETIONS)
