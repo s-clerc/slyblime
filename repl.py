@@ -98,7 +98,7 @@ class EventBasedReplView(sublimerepl.ReplView):
         if error_level == 0:
             prompt = prompt + terminator
         else:
-            prompt = prompt + left + error_level + right + terminator
+            prompt = prompt + left + str(error_level) + right + terminator
         # Write-prompt makes it glitch out for some reason idky
         self.fresh_line()
         self.write(prompt)
@@ -190,7 +190,8 @@ class SlyReplListener(sublime_plugin.EventListener):
                             repl_view.show_backtrack_phantoms(parts[0])
                         except IndexError:
                             pass
-                style = config["invalid_region" if failed or ':' == string[-1] or len(parts) == 0
+                style = config["invalid_region" if failed or ':' == string[-1] 
+                                                          or len(parts) == 0
                                                 else "valid_region"]
                 view.add_regions("backtracking", [closest_match], style["scope"], 
                                  "", util.compute_flags(style["flags"]))
