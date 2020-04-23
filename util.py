@@ -2,7 +2,10 @@ import asyncio
 from bisect import bisect_left
 import re
 
+from sublime import *
+
 from .sexpdata import loads, dumps
+
 
 def get_if_in(dictionary, *items):
     return tuple(dictionary[item] if item in dictionary else None 
@@ -43,6 +46,8 @@ async def show_quick_panel(session, items, flags, selected_index=0, on_highlight
 
 def find_closest_before_point(view, point, regex):
     possibilities = view.find_all(regex)
+    if len(possibilities) == 0: 
+        return None
     i = bisect_left(
         [possibility.begin() for possibility in possibilities], 
         point) - 1
@@ -50,6 +55,36 @@ def find_closest_before_point(view, point, regex):
         return None
     return possibilities[i]
 
+
+# Prefer before is used to determine which value to send in the event of
+# two regions equidistant from the point
+def find_closest(view, point, regex, prefer_before=True):
+    possibilities = view.find_all(regex)
+    if len(possibilities) == 0: 
+        return None
+    i = bisect_left(
+        [possibility.begin() for possibility in possibilities], 
+        point)
+    if i < -1:
+        return None
+    elif i == 0:
+        return possibilities[i]
+    elif i >= len(possibilities):
+        return possibilities[i-1]
+
+    before_point = possibilities[i-1]
+    after_point = possibilities[i]
+    distance = point - before_point.end()
+    distance1 = after_point.begin() - point
+
+    if distance < distance1:
+        return before_point
+    elif distance1 < distance:
+        return after_point
+    elif prefer_before:
+        return before_point
+    else:
+        return after_point
 
 PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
 IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
