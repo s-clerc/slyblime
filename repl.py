@@ -182,39 +182,41 @@ class SlyReplListener(sublime_plugin.EventListener):
         if not (view.settings().get("is_sly_repl")
                 and (repl_view := sublimerepl.manager.repl_view(view))): 
             return
-        try:
-            caret_point = view.sel()[0].begin()
-            closest_match = util.find_closest(
-                view,
-                caret_point,
-                r"(?i)#v([0-9]*(:[0-9]*)?)?")
-            if closest_match and closest_match.contains(caret_point):
-                config = settings().get("repl")['backtracking']
-                failed = False
-                try:
-                    string = view.substr(closest_match)
-                    parts = [int(index) for index in string[2:].split(":")
-                                        if index]
+        caret_point = view.sel()[0].begin()
+        closest_match = util.find_closest(
+            view,
+            caret_point,
+            r"(?i)#v([0-9|\w]*(:[0-9]*)?)?\w*")
+        if closest_match and closest_match.contains(caret_point):
+            config = settings().get("repl")['backtracking']
+            failed = False
+            parts = None
+            try:
+                string = view.substr(closest_match)
+                parts = [util.safe_int(index) 
+                         for index in string[2:].split(":")]
+                if len(parts) < 2 or parts[0] is not None:
                     repl_view.show_backtrack_phantoms(*parts)
-                except IndexError:
-                    # To test if it is possible to show the phantoms for
-                    # at least the value group
+                else:
                     failed = True
-                    if len(parts) == 2:
-                        try:
-                            repl_view.show_backtrack_phantoms(parts[0])
-                        except IndexError:
-                            pass
-                style = config["invalid_region" if failed or ':' == string[-1] 
-                                                          or len(parts) == 0
-                                                else "valid_region"]
-                view.add_regions("backtracking", [closest_match], style["scope"], 
-                                 "", util.compute_flags(style["flags"]))
-            else:
-                repl_view.hide_backtrack_phantoms()
-                view.erase_regions("backtracking")
-        except Exception as e:
-            print(type(e), e)
+            except (IndexError, ValueError):
+                # To test if it is possible to show the phantoms for
+                # at least the value group
+                failed = True
+                if parts and len(parts) == 2:
+                    try:
+                        repl_view.show_backtrack_phantoms(parts[0])
+                    except IndexError:
+                        pass
+            style = config["invalid_region" if failed or ':' == string[-1]
+                                                      or len(parts) == 0
+                                            else "valid_region"]
+            view.add_regions(
+                "backtracking", [closest_match], style["scope"],
+                "", util.compute_flags(style["flags"]))
+        else:
+            repl_view.hide_backtrack_phantoms()
+            view.erase_regions("backtracking")
 
     def on_selection_modified(self, view):
         self.on_modified(view)
