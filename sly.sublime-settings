@@ -11,7 +11,26 @@
     "syntax": "Packages/Lisp/Lisp.tmLanguage",
     "view_title_affixes": ["🖵 sly ", ""],
     "value_prefix": "⟹ ",
-    "avoid_double_newline": true
+    "avoid_double_newline": true,
+    "backtracking": {
+      "affixes" : ["#v", ":", ""],
+      "valid_region": {
+        "scope": "region.bluish",
+        "flags": [
+          "draw_no_outline",
+          "draw_no_fill",
+          "draw_solid_underline"
+        ]
+      },
+      "invalid_region": {
+        "scope": "region.redish",
+        "flags": [
+          "draw_no_outline",
+          "draw_no_fill",
+          "draw_squiggly_underline"
+        ]
+      }
+    }
   },
   "apropos": {
     "max_width": 60

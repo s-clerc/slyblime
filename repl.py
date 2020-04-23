@@ -2,6 +2,7 @@ from sublime import *
 import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
+import itertools
 
 from . import slynk, util, sexpdata
 from .sly import *
@@ -12,6 +13,13 @@ import concurrent.futures
 from SublimeREPL import sublimerepl
 from SublimeREPL.repls import repl
 from . import pydispatch
+
+
+def prepare_backtrack_phantom(region, regions_index, value_index):
+    [prefix, infix, postfix] = settings().get("repl")['backtracking']["affixes"]
+    return Phantom(region, 
+                    f"{prefix}{regions_index}{infix}{value_index}{postfix}", 
+                    LAYOUT_INLINE)
 
 class ReplWrapper(repl.Repl):
     def __init__(self, slynk_repl):
@@ -37,7 +45,9 @@ class EventBasedReplView(sublimerepl.ReplView):
                                   write_values=self.on_write_values,
                                   prompt=self.on_prompt)
         self.repl.slynk_repl.play_events()
-        #print(self.repl.slynk_repl.queue.get())
+        self.value_phantom_groups = []
+        self.backtrack_phantom_set = PhantomSet(self._view, "backtracking")
+        self._view.settings().set("is_sly_repl", True)
 
     def update_view_loop(self):
         return True
@@ -69,9 +79,17 @@ class EventBasedReplView(sublimerepl.ReplView):
         self.write(self.prevent_double_newline(str(message)))
 
     def on_write_values(self, values, *args):
-        for value in values:
+        phantom_group_index = len(self.value_phantom_groups)
+        phantoms = []
+        for value_index, value in enumerate(values):
             self.fresh_line()
+            phantoms.append(prepare_backtrack_phantom(
+                # First character of next line:
+                Region(self._view.size(), self._view.size()),
+                phantom_group_index,
+                value_index))
             self.write(settings().get("repl")['value_prefix'] + str(value[0]))
+        self.value_phantom_groups.append(phantoms)
 
     def on_prompt(self, package, prompt, error_level, *args):
         terminator = settings().get("repl")['prompt']
@@ -85,12 +103,24 @@ class EventBasedReplView(sublimerepl.ReplView):
         self.fresh_line()
         self.write(prompt)
 
+    def show_backtrack_phantoms(self, value_region_group_index=None, value_index=None):
+        if value_index is not None and value_region_group_index is not None:
+            phantoms = [self.value_phantom_groups[value_region_group_index][value_index]]
+        elif value_region_group_index is not None:
+            phantoms = self.value_phantom_groups[value_region_group_index]
+        else:
+            phantoms = list(itertools.chain.from_iterable(self.value_phantom_groups))
+        self.backtrack_phantom_set.update(phantoms)
+
+    def hide_backtrack_phantoms(self):
+        self.backtrack_phantom_set.update([]) 
+
+
 async def create_main_repl(session):
     window = session.window
     slynk = session.slynk
     # Mostly copy and pasted from sublimeREPL.sublimerepl.ReplManager
     try:
-        global rv
         repl = await slynk.create_repl()
         found = None
         for view in window.views():
@@ -114,11 +144,13 @@ async def create_main_repl(session):
         traceback.print_exc()
         sublime.error_message(repr(e))
 
+
 class CreateReplCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         global loop
         session = getSession(self.window.id())
         asyncio.run_coroutine_threadsafe(create_main_repl(session), loop)
+
 
 class ReplNewlineCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -130,3 +162,43 @@ class ReplNewlineCommand(sublime_plugin.TextCommand):
         view.insert(edit, caret_point, "\n")
 
 
+class SlyReplListener(sublime_plugin.EventListener):
+    def on_modified(self, view):
+        if not (view.settings().get("is_sly_repl")
+                and (repl_view := sublimerepl.manager.repl_view(view))):
+            return
+        try:
+            caret_point = view.sel()[0].begin()
+            closest_match = util.find_closest(
+                view,
+                caret_point,
+                r"(?i)#v([0-9]*(:[0-9]*)?)?")
+            if closest_match and closest_match.contains(caret_point):
+                config = settings().get("repl")['backtracking']
+                failed = False
+                try:
+                    string = view.substr(closest_match)
+                    parts = [int(index) for index in string[2:].split(":")
+                                        if index]
+                    repl_view.show_backtrack_phantoms(*parts)
+                except IndexError:
+                    # To test if it is possible to show the phantoms for
+                    # at least the value group
+                    failed = True
+                    if len(parts) == 2:
+                        try:
+                            repl_view.show_backtrack_phantoms(parts[0])
+                        except IndexError:
+                            pass
+                style = config["invalid_region" if failed or ':' == string[-1] or len(parts) == 0
+                                                else "valid_region"]
+                view.add_regions("backtracking", [closest_match], style["scope"], 
+                                 "", util.compute_flags(style["flags"]))
+            else:
+                repl_view.hide_backtrack_phantoms()
+                view.erase_regions("backtracking")
+        except Exception as e:
+            print(type(e), e)
+
+    def on_selection_modified(self, view):
+        self.on_modified(view)
