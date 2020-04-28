@@ -1,128 +1,11 @@
-from typing import *
-
-from ..pydispatch import Dispatcher
-
+from .types import *
 import asyncio
 
-from ..sexpdata import loads, dumps, Symbol, Quoted
-from collections import namedtuple
-
 import threading
-from dataclasses import dataclass
 from sys import maxsize
 from .util import *
 
 import pathlib
-
-
-@dataclass
-class DebugEventData:
-    thread: str = None
-    level: Any = None
-    title: Any = None
-    type: Any = None
-    restarts: list = None
-    stack_frames: list = None
-
-
-@dataclass
-class PromisedRequest:
-    id: int
-    command: str
-    package: str
-    future: Any
-
-
-@dataclass
-class StackFrameLocal:
-    name: str
-    id: int
-    value: str
-
-@dataclass
-class StackFrame:
-    index: int
-    description: str
-    is_restartable: bool
-    locals: List[StackFrameLocal] = None
-    catch_tags: List[str] = None
-
-
-@dataclass
-class InspectionData:
-    title: str
-    id: int
-    content: list
-
-
-@dataclass
-class Position:
-    type: str
-    qualifiers: Optional[list] = None
-    specialisers: Optional[list] = None
-    offset: Optional[int] = None
-    column: Optional[int] = None
-    function: Optional[str] = None
-    source_path_list: Optional[list] = None
-
-
-@dataclass
-class Location:
-    buffer_type: Optional[str] = None
-    error: Optional[str] = None
-    file: Optional[str] = None
-    zip_file: Optional[str] = None
-    zip_entry: Optional[str] = None
-    position: Optional[Position] = None
-    source_form: Optional[str] = None
-
-
-@dataclass
-class Definition:
-    label: str
-    location: Location
-
-
-@dataclass
-class Completion:
-    name: str
-    probability: float
-    match_locations: List[List[Union[int, str]]]
-    namespaces: List[str]
-    
-class DictAsObject(object):
-    def __init__(self, dict):
-        self.__dict__ = dict
-
-@dataclass
-class ConnexionInformation:
-    pid: int = None
-    style: str = None
-    encoding: DictAsObject = None
-    lisp_implementation: DictAsObject = None
-    machine: DictAsObject = None
-    features: List[str] = None
-    modules: List[str] = None
-    package: str = None
-    version: str = None
-
-
-@dataclass
-class CompilationNote:
-    message: str = ""
-    severity: str = ""
-    location: Dict[str, Any] = None
-    references: list = None
-    source_context: Any = None
-
-@dataclass
-class CompilationResult:
-    notes: List[CompilationNote]
-    success: bool
-    duration: float
-    load: bool
-    path: str
-    # type which is always :compilation-result
 
 
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
@@ -167,13 +50,13 @@ class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
         if data is None:
             return
         packet_size = int(data[0:6].decode("utf-8"), 16)
-        #print(data)
+        # print(data)
         self.emit("reception", data[6:packet_size + 6])
 
         remainder = data[packet_size + 6:]
         if len(remainder) > 5:  # sanity check
-            #print("Remainder: ")
-           # print(remainder)
+            # print("Remainder: ")
+            # print(remainder)
             self.data_received(remainder)
         elif len(remainder) > 0:
             print("Erroneous remainder of ")
@@ -300,66 +183,6 @@ class SlynkClient(Dispatcher):
         self.channels.append(Channel(self, id))
         return id, self.channels[id]
 
-    # Slynk data parsing
-    @staticmethod
-    def parse_position(raw_position):
-        position = Position(raw_position[0][1:].lower())
-
-        if position.type == "position":
-            position.offset = raw_position[1]
-        elif position.type == "offset":
-            position.type = "position"
-            position.offset = raw_position[1] + raw_position[2]
-        elif position.type == "line":
-            position.line = raw_position[1]
-            if len(raw_position) >= 3:
-                position.column = raw_position[2]
-        elif position.type == "function-name":
-            position.function = raw_position[1]
-        elif position.type == "source-path":
-            # Both r_p[1] and r_p[2] MAY be symbols and not str as assumed
-            position.source_path_list = raw_position[1] if type(raw_position[1]) == list else []
-            position.source_path_start = raw_position[2]
-        elif position.type == "method":
-            # The following MAY be symbols !!
-            position.method_name = raw_position[1]
-            position.specialisers = raw_position[2] if type(raw_position[2]) == list else []
-            position.qualifiers = raw_position[3:]
-
-        return position
-
-    def parse_location(self, raw_location):
-        data = Location()
-
-        # symbexp of form (:ERROR <message>)
-        if str(raw_location[0]).upper() == ":ERROR":
-            data.buffer_type = "error"
-            data.error = str(raw_location[1])
-            return data
-        # symbexp of form (:LOCATION <buffer> <position> <hints>)
-        raw_buffer = raw_location[1]
-        data.buffer_type = raw_buffer[0][1:].lower()
-        buffer_type = data.buffer_type
-        second = str(raw_buffer[1])
-        third = str(raw_buffer[2])
-        # Parse type
-        if buffer_type == "file":
-            data.file = second
-        elif buffer_type == "buffer":
-            data.buffer_name = second
-        elif buffer_type == "buffer-and-file":
-            data.buffer_name = second
-            data.file = third
-        elif buffer_type == "source-from":
-            data.source_form = second
-        elif data.buffer_type == "zip":
-            data.zip_file = second
-            data.zip_entry = third
-
-        data.position = self.parse_position(raw_location[2])
-        data.hints = raw_location[3:]
-        return data
-
     def ping_handler(self, expression):
         self.send_message("(:EMACS-PONG " + str(expression[1]) + " " + str(expression[2]) + ")")
 
@@ -389,18 +212,6 @@ class SlynkClient(Dispatcher):
             print(str(self.request_table))
             print(f"Danger, received rex response for unknown command id {id}")
 
-    @staticmethod
-    def _extract_properties(expression):
-        thread = str(expression[1])
-        tag = str(expression[2])
-        return thread, tag
-
-    def _extract_question_properties(self, expression):
-        thread, tag = self._extract_properties(expression)
-        prompt = str(expression[3])
-        initial_value = expression[4] if len(expression) > 4 and expression[4] else ""
-        return thread, tag, prompt, initial_value
-
     async def _futured_emit(self, name, *args, **kwargs):
         future = self.loop.create_future()
         # In practice there will only be only such handler for the following
@@ -411,28 +222,28 @@ class SlynkClient(Dispatcher):
         return future.result()
 
     async def read_from_minibuffer_handler(self, expression):
-        thread, tag, prompt, initial_value = self._extract_question_properties(expression)
+        thread, tag, prompt, initial_value = _extract_question_properties(expression)
         answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def y_or_n_handler(self, expression):
-        thread, tag, prompt, initial_value = self._extract_question_properties(expression)
+        thread, tag, prompt, initial_value = _extract_question_properties(expression)
         answer = await self._futured_emit("y_or_n_p", prompt)
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def read_string_handler(self, expression):
-        thread, tag = self._extract_properties(expression)
+        thread, tag = _extract_properties(expression)
         string = await self._futured_emit("read_string", tag)
         self.send_message(f"(:EMACS-RETURN-STRING {thread} {tag} {dumps(string)})")
 
     def read_aborted_handler(self, expression):
-        thread, tag = self._extract_properties(expression)
+        thread, tag = _extract_properties(expression)
         self.emit("read_aborted", tag)
 
     # A slyfun
-    async def require (self, modules):
+    async def require(self, modules):
         if type(modules) != list:
-            modules = [modules] # Only one module
+            modules = [modules]  # Only one module
         command = f"SLYNK:SLYNK-REQUIRE '{dumps(modules)}"
         result = await self.rex(command, "T", "NIL")
         return result
@@ -453,7 +264,7 @@ class SlynkClient(Dispatcher):
         return repl
 
     async def prepare(self, path=pathlib.Path().parent.absolute()):
-         # Missing C-P-C, Fuzzy, Presentations from SLIMAß
+        # Missing C-P-C, Fuzzy, Presentations from SLIMAß
         await self.add_load_paths(f"{path}/sly/contrib/")
         await self.require(
             ["slynk/indentation",
@@ -463,8 +274,8 @@ class SlynkClient(Dispatcher):
              "slynk/fancy-inspector",
              "slynk/mrepl",
              "slynk/arglists"])
-        #await self.rex("SLYNK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
-        #await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
+        # await self.rex("SLYNK:INIT-PRESENTATIONS", "T", "COMMON-LISP-USER")
+        # await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
 
     async def autodoc(self, expression_string, cursor_position, *args):
@@ -507,7 +318,7 @@ class SlynkClient(Dispatcher):
         pattern = dumps(pattern)
         command = f"SLYNK-COMPLETION:{'FLEX' if flex else 'SIMPLE'}-COMPLETIONS (QUOTE {pattern}) \"{package}\""
         response = await self.rex(command, "T", package)
-        return [Completion(*completion[:-1], completion[3].split(",")) 
+        return [Completion(*completion[:-1], completion[3].split(","))
                 for completion in response[0]]
 
     async def eval(self, expression_string, *args):
@@ -603,7 +414,7 @@ class SlynkClient(Dispatcher):
 
     async def debug_frame_source(self, frame, thread, *args):
         result = await self.rex(f"SLYNK:FRAME-SOURCE-LOCATION {frame}", thread, *args)
-        return self.parse_location(result)
+        return parse_location(result)
 
     async def debug_disassemble_frame(self, frame, thread, *args):
         result = await self.rex(f"SLYNK:SLY-DB-DISASSEMBLE {frame}", thread, *args)
@@ -671,31 +482,17 @@ class SlynkClient(Dispatcher):
         definitions = []
         for raw_definition in raw_definitions:
             try:
-                location = self.parse_location(raw_definition[1])
+                location = parse_location(raw_definition[1])
                 if location.buffer_type != "error":
                     definitions.append(Location(raw_definition[0], location))
             except Exception as e:
                 print(f"Error find_definitions failed to parse {raw_definition}")
         return definitions
 
-    def parse_compilation_information(self, expression):
-        def parse_compilation_note(expression):
-            note = property_list_to_dict(expression)
-            note["location"] = association_list_to_dict(note["location"][1:])
-            note["severity"] = str(note["severity"])
-            return CompilationNote(**note)
-
-        return CompilationResult(
-            notes = [parse_compilation_note(note) for note in expression[1]],
-            success = True if expression[2] else False,
-            duration = expression[3] if expression[3] else None,
-            load = True if expression[4] else False,
-            path = expression[5] if expression[5] else None)
-
-    async def compile_string(self, string, buffer_name, file_name, position, 
-                                compilation_policy="'NIL", package=DEFAULT_PACKAGE):
+    async def compile_string(self, string, buffer_name, file_name, position,
+                             compilation_policy="'NIL", package=DEFAULT_PACKAGE):
         if type(position) == tuple and len(position) > 2:
-            position = f"(:POSITION {position[0]}) (:LINE {position[1]} {position[2]})" 
+            position = f"(:POSITION {position[0]}) (:LINE {position[1]} {position[2]})"
         else:
             position = f"(:POSITION {position})"
 
@@ -710,7 +507,7 @@ class SlynkClient(Dispatcher):
         result = await self.rex(command, "T", package)
 
         if str(result[0]).lower() == ":compilation-result":
-            return self.parse_compilation_information(result)
+            return parse_compilation_information(result)
         return result
 
     async def compile_file(self, file_name, should_load=True, *args):
@@ -718,7 +515,7 @@ class SlynkClient(Dispatcher):
         # result is (:compilation-result notes success duration load? output-pathname)
         indication = str(result[0]).lower()
         if indication == ":compilation-result":
-            result = self.parse_compilation_information(result)
+            result = parse_compilation_information(result)
             if should_load and (result.success or should_load == "always") and result.path:
                 await self.load_file(result.path, *args)
         return result
@@ -842,20 +639,20 @@ class SlynkClient(Dispatcher):
 
         data = await self.rex("SLYNK:CONNECTION-INFO", "T")
         as_dict = property_list_to_dict(data)
-        
-        #Pythonifying internal datastructures.
+
+        # Pythonifying internal datastructures.
         return ConnexionInformation(
             as_dict["pid"],
             s[1:] if (s := str(as_dict["style"]))[0] == ":" else s,
             convert("encoding"),
             convert("lisp_implementation"),
             convert("machine"),
-                # Remove colon from start of keyword
+            # Remove colon from start of keyword
             [str(feature)[1:] for feature in as_dict["features"]],
             as_dict["modules"],
             convert("package"),
             as_dict["version"]
-            )
+        )
 
     async def update_connexion_info(self):
         self.connexion_info = await self.get_connexion_info()
@@ -905,6 +702,7 @@ async def mainA(x, y, repl):
     await x.closed()
     # x.eval("(+ 2 2)")
 
+
 def main(repl):
     PYTHONASYNCIODEBUG = 1
     loop = asyncio.new_event_loop()
@@ -914,6 +712,7 @@ def main(repl):
     threading.Thread(target=loop.run_forever).start()
     print("Anyways return")
     return x
+
 
 if __name__ == '__main__':
     main(True)
