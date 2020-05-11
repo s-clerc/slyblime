@@ -6,7 +6,7 @@
   },
   "debug": true,
   "repl": {
-    "prompt": "〉",
+    "prompt": "⟩ ",
     "error": [" ｢", "｣"],
     "syntax": "Packages/Lisp/Lisp.tmLanguage",
     "view_title_affixes": ["🖵 sly ", ""],
