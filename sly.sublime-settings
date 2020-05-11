@@ -13,7 +13,9 @@
     "value_prefix": "⟹ ",
     "avoid_double_newline": true,
     "backtracking": {
-      "affixes" : ["#v", ":", ""],
+      "affixes" : ["<span style='padding-right:2px;'>【</span>",
+                   "<span style='padding-left:1px;padding-right:1px;'>:</span>", 
+                   "<span style='padding-left:2px;'>】</span>"],
       "valid_region": {
         "scope": "region.bluish",
         "flags": [
