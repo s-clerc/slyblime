@@ -79,12 +79,12 @@ class Repl(Dispatcher):
 
 
 def parse_symbol(key, lower_keys=True, remove_colon_from_keyword=True, replace_dash_with_underscore=True):
-        key = str(key)
-        if remove_colon_from_keyword and key[0] == ":":
-            key = key[1:]
-        if replace_dash_with_underscore:
-            key = key.replace("-", "_")
-        return key.lower() if lower_keys else key
+    key = str(key)
+    if remove_colon_from_keyword and key[0] == ":":
+        key = key[1:]
+    if replace_dash_with_underscore:
+        key = key.replace("-", "_")
+    return key.lower() if lower_keys else key
 
 def property_list_to_dict(plist, *args):
     return {parse_symbol(key, *args): value 
@@ -169,6 +169,23 @@ def parse_compilation_information(expression):
         load=True if expression[4] else False,
         path=expression[5] if expression[5] else None)
 
+def parse_inspection(inspection):
+    def parse_element(element):
+        if type(element) == list:
+            return DictAsObject(
+                # Remove colon from keyword
+                {"type": element[0][1:],
+                 "content": element[1],
+                 "index": element[2],
+                 # Primarily for debugging purposes
+                 "original_content": element})
+        return element
+
+    inspection = property_list_to_dict(inspection)
+    inspection["content_specifiers"] = inspection["content"][1:]
+    inspection = DictAsObject(inspection)
+    inspection.content = [parse_element(element) for element in inspection.content[0]]
+    return inspection
 
 def _extract_properties(expression):
     thread = str(expression[1])
