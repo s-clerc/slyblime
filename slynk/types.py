@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union, Dict
 
-
 @dataclass
 class DebugEventData:
     thread: str = None
@@ -82,6 +81,8 @@ class Completion:
 class DictAsObject(object):
     def __init__(self, dict):
         self.__dict__ = dict
+    def __repr__(self):
+        return str(self.__class__)[:-1] + "|" + str(self.__dict__)[1:-1] + ">"
 
 
 @dataclass
