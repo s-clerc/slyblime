@@ -3,7 +3,8 @@ from typing import Any, Optional
 
 
 def flatten(source: Any):
-    if isinstance(source, str):
+    # So it doesn't flatten BaseHtmlElements which are lists now
+    if type(source) in [BaseHtmlElement, str]:
         yield source
     elif isinstance(source, Iterable):
         for element in source:
@@ -61,7 +62,7 @@ class BaseHtmlElement(list):
         element.single = self.single
         element.no_content = self.no_content
         return element
-    
+        
     @property
     def level(self):
         return self.parent.level + 1 if self.parent else 0
@@ -77,12 +78,12 @@ class BaseHtmlElement(list):
     def __str__(self):
         blank = "  " * self.level
         attrs = " {}".format(" ".join(f"""{key.replace("_", "-")}='{str(self.attrs[key])}'""" for key in self.attrs)) if self.attrs else ""
-        children = "\n".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self)
+        children = "\n".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self)        
         if self.single:
             return f"{blank}<{self.name}{attrs}>"
         elif self.no_content:
             return f"{blank}<{self.name}{attrs}>"
-        return f"{blank}<{self.name}{attrs}>\n{children}\n{blank}</{name}>"
+        return f"{blank}<{self.name}{attrs}>\n{children}\n{blank}</{self.name}>"
 
 
 A = BaseHtmlElement("a")
