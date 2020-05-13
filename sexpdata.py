@@ -480,7 +480,7 @@ class Symbol(String):
     _lisp_quoted_to_raw = dict((q, r) for (r, q) in _lisp_quoted_specials)
 
     def __str__(self):
-        return str(dumps(self))
+        return self.quote(self)
 
 @tosexp.register(Symbol)
 def _(obj, **kwds):
