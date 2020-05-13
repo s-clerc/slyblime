@@ -12,11 +12,10 @@ def flatten(source: Any):
         yield source
 
 
-class BaseHtmlElement:
+class BaseHtmlElement(list):
     def __init__(self, name: str, single: bool = False, no_content: bool = False):
         self.name = name
         self.attrs: dict = {}
-        self.children: list = []
         self.parent: Optional[BaseHtmlElement] = None
         self.single = single
         self.no_content = no_content
@@ -35,23 +34,18 @@ class BaseHtmlElement:
         # Allow easy access to child items by further overloading [] syntax
         # Assumes that elements will never be single ints
         if type(children) in [int, slice]:
-            return self.children.__getitem__(children)
+            return super().__getitem__(children)
         element = BaseHtmlElement(self.name)
         element.attrs.update(self.attrs)
         true_children = list(flatten(children))
         for one in true_children:
             if isinstance(one, BaseHtmlElement):
                 one.parent = element
-        element.children.extend(true_children)
+        element.extend(true_children)
         element.single = self.single
         element.no_content = self.no_content
         return element
 
-    def __setitem__(self, *args):
-        self.children.__setitem__(*args)
-
-    def __delitem__(self, *args):
-        self.children.__delitem__(*args)
     
     @property
     def level(self):
@@ -60,20 +54,20 @@ class BaseHtmlElement:
     def __repr__(self):
         blank = "  " * self.level
         attrs = "({})".format(";".join(f"{key}={repr(self.attrs[key])}" for key in self.attrs)) if self.attrs else ""
-        children = "\n".join(repr(child) if isinstance(child, BaseHtmlElement) else blank + repr(child) for child in self.children)
+        children = "\n".join(repr(child) if isinstance(child, BaseHtmlElement) else blank + repr(child) for child in self)
         if self.single or self.no_content:
-            return "{blank}{name}{attrs}".format(blank=blank, name=self.name, attrs=attrs)
-        return "{blank}{name}{attrs}[\n{children}]".format(blank=blank, name=self.name, attrs=attrs, children=children)
+            return f"{blank}{self.name}{attrs}"
+        return f"{blank}{self.name}{attrs}[\n{children}]"
 
     def __str__(self):
         blank = "  " * self.level
         attrs = " {}".format(" ".join(f"""{key.replace("_", "-")}='{str(self.attrs[key])}'""" for key in self.attrs)) if self.attrs else ""
-        children = "\n".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self.children)
+        children = "\n".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self)
         if self.single:
-            return "{blank}<{name}{attrs}>".format(blank=blank, name=self.name, attrs=attrs)
+            return f"{blank}<{self.name}{attrs}>"
         elif self.no_content:
-            return "{blank}<{name}{attrs}>".format(blank=blank, name=self.name, attrs=attrs)
-        return "{blank}<{name}{attrs}>\n{children}\n{blank}</{name}>".format(blank=blank, name=self.name, attrs=attrs, children=children)
+            return f"{blank}<{self.name}{attrs}>"
+        return f"{blank}<{self.name}{attrs}>\n{children}\n{blank}</{name}>"
 
 
 A = BaseHtmlElement("a")
