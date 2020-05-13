@@ -107,6 +107,7 @@ class SlynkClient(Dispatcher):
         self.debug_data = None
         self.repls = []
         self.connexion_info = None
+        self.current_inspector = None
 
     async def connect(self, *args):
         if len(args) > 0:
@@ -445,6 +446,35 @@ class SlynkClient(Dispatcher):
     async def debug_break(self, function_name, thread, *args):
         result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", thread, *args)
         return result
+
+    ### Inspector
+
+    # Careful, the format for commands here is as a list and not
+    # a precomposed string
+    async def eval_for_inspector(self, slyfun_and_args, 
+                                # Keyword arguments in the original
+                                 error_message="Inspection Failed",
+                                 restore_point=None, 
+                                 save_selected_window=False,
+                                 target_inspector=None):
+                            # (Due to encapsulation, opener is non-present)
+        if not target_inspector:
+            target_inspector = self.current_inspector
+
+        query = " ".join([
+            "SLYNK:EVAL-FOR-INSPECTOR",
+            dumps(self.current_inspector),
+            dumps(target_inspector),
+            f"'{slyfun_and_args[0]}", 
+        ] + [dumps(element) for element in slyfun_and_args[1:]])
+        result = await self.rex(query, "T")
+        return result
+
+    async def inspect(self, string, target_inspector=None):
+        result = await self.eval_for_inspector(
+            ["SLYNK:INIT-INSPECTOR", string],
+            target_inspector=target_inspector)
+        return parse_inspection(result)
 
     ### Profiling
 
