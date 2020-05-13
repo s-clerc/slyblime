@@ -51,7 +51,7 @@ class EventBasedReplView(sublimerepl.ReplView):
         self.value_phantom_groups = []
         self.backtrack_phantom_set = PhantomSet(self._view, "backtracking")
         self._view.settings().set("is_sly_repl", True)
-        
+
     def update_view_loop(self):
         return True
 
@@ -177,8 +177,6 @@ class ReplNewlineCommand(sublime_plugin.TextCommand):
         view.insert(edit, caret_point, "\n")
 
 
-
-
 class SlyReplListener(sublime_plugin.EventListener):
     def on_modified(self, view):
         if not (view.settings().get("is_sly_repl")
@@ -222,8 +220,3 @@ class SlyReplListener(sublime_plugin.EventListener):
 
     def on_selection_modified(self, view):
         self.on_modified(view)
-        # view.add_regions(
-        #     key="tmp", 
-        #     regions=[view.sel()[0]], 
-        #     annotations=["(cond (condition actions)..."], 
-        #     on_close=lambda: view.erase_regions("tmp"))
