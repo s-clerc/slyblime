@@ -16,7 +16,11 @@ from . import pydispatch
 if "futures" not in globals():
     futures = {}
 
-def design(debug_data):
+def design(debug_data, future_id):
+    def url(prefix, index):
+        # The use of double curlies must be a joke
+        return f'subl:debugger_sheet_url {{"url": "{prefix}-{index}", "future_id": "{future_id}"}}'
+        
     affixes = sly.settings().get("debugger")["header_affixes"]
     html = ('<html> <body id="sly-debugger">'
         f'<h1>{escape(affixes[0]+str(debug_data.level)+affixes[1])}</h1>'
@@ -28,7 +32,7 @@ def design(debug_data):
     for index, restart in enumerate(debug_data.restarts):
         label = restart[0].lower().capitalize()
         html += (
-            f'<li><a class="button" href="restart-{index}">{escape(label)}</a>'
+            f'<li><a class="button" href=\'{url("restart", index)}\'>{escape(label)}</a>'
             f' {escape(restart[1])}</li>')
     html += (
         '</ol><hr><ol start="1">'
@@ -37,20 +41,20 @@ def design(debug_data):
     for index, frame_title, restartable in debug_data.stack_frames:
         html += (
             f'<li  value="{index}">' 
-            f'<a href="frame-{index}" class="stack_frame">'
+            f'<a href=\'{url("frame", index)}\' class="stack_frame">'
             f' {escape(frame_title)}</a></li>')
     html += '</ol> </body> </html>'
     return html
 
 async def show(session, debug_data):
     global futures
-    html = design(debug_data)
     affixes = sly.settings().get("debugger")["view_title_affixes"]
     title = affixes[0] + str(debug_data.level) + affixes[1]
     future_id = uuid.uuid4().hex
-    future =  session.loop.create_future()
+    html = design(debug_data, future_id)
+    future = session.loop.create_future()
     futures[future_id] = future
-    sheet = session.window.new_html_sheet(title, html, "debugger_sheet_url", {"future": future_id})
+    sheet = session.window.new_html_sheet(title, html, 0)
     await future
     session.window.run_command("close")
     return future.result()
@@ -64,8 +68,9 @@ class DebuggerSheetUrlCommand(sublime_plugin.ApplicationCommand):
             sly.loop)
         
 async def async_run(**kwargs):
+    print(kwargs)
     url = kwargs["url"]
-    future_id = kwargs["future"]
+    future_id = kwargs["future_id"]
     [action, index] = url.split("-")
     index = int(index)
     futures[future_id].set_result((action, index))
