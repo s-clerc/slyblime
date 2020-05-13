@@ -71,6 +71,7 @@ class BaseHtmlElement(list):
         blank = "  " * self.level
         attrs = "({})".format(";".join(f"{key}={repr(self.attrs[key])}" for key in self.attrs)) if self.attrs else ""
         children = "\n".join(repr(child) if isinstance(child, BaseHtmlElement) else blank + repr(child) for child in self)
+        
         if self.single or self.no_content:
             return f"{blank}{self.name}{attrs}"
         return f"{blank}{self.name}{attrs}[\n{children}]"
@@ -84,6 +85,21 @@ class BaseHtmlElement(list):
         elif self.no_content:
             return f"{blank}<{self.name}{attrs}>"
         return f"{blank}<{self.name}{attrs}>\n{children}\n{blank}</{self.name}>"
+
+    def get_element_by_id(self, id):
+        if self.attrs["id"] == id:
+            return self
+        for element in self:
+            if type(element) != BaseHtmlElement:
+                continue
+            nested_element = element.get_element_by_id(id)
+            if nested_element is not None:
+                return nested_element
+        return None
+
+    def getElementById(self, *args):
+        self.get_element_by_id(*args)
+        
 
 
 A = BaseHtmlElement("a")
