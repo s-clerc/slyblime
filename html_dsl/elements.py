@@ -46,6 +46,21 @@ class BaseHtmlElement(list):
         element.no_content = self.no_content
         return element
 
+    def __add__(self, addend):
+        if type(addend) == int:
+            addend = str(addend)
+            
+        element = BaseHtmlElement(self.name)
+        element.attrs.update(self.attrs)
+        true_children = list(flatten(addend))
+        for one in true_children:
+            if isinstance(one, BaseHtmlElement):
+                one.parent = element
+        element.extend(self)
+        element.extend(true_children)
+        element.single = self.single
+        element.no_content = self.no_content
+        return element
     
     @property
     def level(self):
