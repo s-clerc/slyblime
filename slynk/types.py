@@ -40,6 +40,9 @@ class InspectionData:
     title: str
     id: int
     content: list
+    length: int = -1
+    start: int = -1
+    end: int = -1
 
 
 @dataclass
