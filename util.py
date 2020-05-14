@@ -7,6 +7,8 @@ from sublime import *
 
 from .sexpdata import loads, dumps
 
+from .sly import settings
+import uuid
 
 def get_if_in(dictionary, *items):
     return tuple(dictionary[item] if item in dictionary else None 
@@ -113,11 +115,13 @@ def current_package(view, point=None, return_region=False):
         if return_region:
             return info, region
 
+
 def compute_flags(flags):
     computed_flags = 0
     for flag in flags:
         computed_flags = computed_flags | globals()[flag.upper()]
     return computed_flags
+
 
 def safe_int(value: str) -> int:
     try:
@@ -125,5 +129,19 @@ def safe_int(value: str) -> int:
     except ValueError:
         return None
 
+
 def load_resource(path):
     return sublime.load_resource(f"Packages/{__name__.split('.')[0]}/{path}")
+
+
+def add_regions_temporarily(view, regions, duration, *args):
+    id = uuid.uuid4().hex
+    view.add_regions(id, regions, *args)
+    set_timeout_async(lambda: view.erase_regions(id), duration)
+
+
+def highlight_region (view, region, duration=None, *args):
+    config = settings().get("highlighting")
+    if not duration:
+       duration = config['duration'] * 1000
+    add_regions_temporarily(view, [region], duration, *args)

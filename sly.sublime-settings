@@ -97,9 +97,6 @@
   },
   "compilation": {
     "max_search_iterations": 100,
-    "highlight_duration": 2,
-    "highlight_form_scope": "region.bluish",
-    "highlight_package_scope": "region.greenish",
     "syntax_regex" : "(?i)lisp",
     "notes_view": {
       "header_affixes": ["¡", "!"],
@@ -115,4 +112,9 @@
     }
     },
   },
+  "highlighting": {
+    "duration": 2,
+    "form_scope": "region.bluish",
+    "package_scope": "region.greenish",
+  }
 }
