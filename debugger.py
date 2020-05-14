@@ -22,7 +22,8 @@ def design(debug_data, future_id):
         return f'subl:debugger_sheet_url {{"url": "{prefix}-{index}", "future_id": "{future_id}"}}'
         
     affixes = sly.settings().get("debugger")["header_affixes"]
-    html = ('<html> <body id="sly-debugger">'
+    html = ('<html> <body class="sly sly-debugger" id="sly-debugger">' 
+        f'<style>{util.load_resource("stylesheet.css")}</style>'
         f'<h1>{escape(affixes[0]+str(debug_data.level)+affixes[1])}</h1>'
         f'<h2>{escape(debug_data.title)}</h2>'
         f'<h3> {escape(debug_data.type)}</h3> <hr>'
