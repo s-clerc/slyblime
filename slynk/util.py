@@ -181,10 +181,9 @@ def parse_inspection(inspection):
                  "original_content": element})
         return element
 
-    inspection = property_list_to_dict(inspection)
-    inspection["content_specifiers"] = inspection["content"][1:]
-    inspection = DictAsObject(inspection)
-    inspection.content = [parse_element(element) for element in inspection.content[0]]
+    inspection = InspectionData(**property_list_to_dict(inspection))
+    [inspection.content, inspection.length, inspection.start, inspection.end] = inspection.content
+    inspection.content = [parse_element(element) for element in inspection.content]
     return inspection
 
 def _extract_properties(expression):
