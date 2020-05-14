@@ -35,7 +35,7 @@ def compile_region(view, window, session, region):
     # we can't do regular destructuring because for some dumb reason emacs has
     # line numbers in N* but column numbers in N (wtaf)
     row, col = view.rowcol(region.begin()) 
-    package_info = util.in_package_parameters_at_point(view, region.begin(), True)
+    package_info = util.current_package(view, region.begin(), True)
     window.status_message(f"Package information: {package_info[0]}")
     highlight_region(view, region, None, config["highlight_form_scope"])
     parameters = { 
