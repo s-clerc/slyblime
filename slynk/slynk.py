@@ -451,29 +451,77 @@ class SlynkClient(Dispatcher):
 
     # Careful, the format for commands here is as a list and not
     # a precomposed string
-    async def eval_for_inspector(self, slyfun_and_args, 
+    async def eval_for_inspector(self, slyfun, *args, 
                                 # Keyword arguments in the original
+                                 package=DEFAULT_PACKAGE,
                                  error_message="Inspection Failed",
                                  restore_point=None, 
                                  save_selected_window=False,
+                                 current_inspector=None,
                                  target_inspector=None):
                             # (Due to encapsulation, opener is non-present)
         if not target_inspector:
             target_inspector = self.current_inspector
+        if not current_inspector:
+            current_inspector = self.current_inspector
 
         query = " ".join([
             "SLYNK:EVAL-FOR-INSPECTOR",
-            dumps(self.current_inspector),
+            dumps(current_inspector),
             dumps(target_inspector),
-            f"'{slyfun_and_args[0]}", 
-        ] + [dumps(element) for element in slyfun_and_args[1:]])
-        result = await self.rex(query, "T")
+            f"'{slyfun}", 
+        ] + [dumps(element) for element in args])
+        result = await self.rex(query, "T", package)
         return result
 
-    async def inspect(self, string, target_inspector=None):
+    async def inspect(self, query, current_inspector=None, target_inspector=None, package=DEFAULT_PACKAGE):
         result = await self.eval_for_inspector(
-            ["SLYNK:INIT-INSPECTOR", string],
-            target_inspector=target_inspector)
+            "SLYNK:INIT-INSPECTOR", query,
+            target_inspector=target_inspector,
+            current_inspector=current_inspector,
+            package=package)
+        return parse_inspection(result)
+
+    async def inspect_part(self, part, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK:INSPECT-NTH-PART", part,
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
+        return parse_inspection(result)
+
+    async def inspector_call_action(self, action, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK::INSPECTOR-CALL-NTH-ACTION", action,
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
+        return parse_inspection(result)
+
+    async def inspector_previous(self, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK:INSPECTOR-POP",
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
+        return parse_inspection(result)
+
+    async def inspector_next(self, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK:INSPECTOR-NEXT",
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
+        return parse_inspection(result)
+
+    async def reinspect(self, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK:INSPECTOR-REINSPECT",
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
+        return parse_inspection(result)
+
+    async def toggle_verbose_inspection(self, current_inspector=None, target_inspector=None):
+        result = await self.eval_for_inspector(
+            "SLYNK:INSPECTOR-REINSPECT",
+            target_inspector=target_inspector,
+            current_inspector=current_inspector)
         return parse_inspection(result)
 
     ### Profiling
