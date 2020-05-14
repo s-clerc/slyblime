@@ -18,14 +18,6 @@ if "futures" not in globals():
     futures = {}
     inspectors = {}
 
-class TestCommand(sublime_plugin.WindowCommand):
-    def run(self, **kwargs):
-        # We need to set the future result in the same
-        # thread as the loop
-        asyncio.run_coroutine_threadsafe(
-            async_run(sly.getSession(self.window.id()), **kwargs), 
-            sly.loop)
-
 
 async def async_run(session, **kwargs):
     try:
@@ -36,6 +28,14 @@ async def async_run(session, **kwargs):
         Inspector(session, expression)
     except Exception as e:
         print(e)
+
+
+class InspectCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            async_run(sly.getSession(self.window.id()), **kwargs), 
+            sly.loop)
+
 
 def escape(string):
     return html.escape(string).replace(" ", "&nbsp;")
