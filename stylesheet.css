@@ -1,0 +1,50 @@
+.sly-inspector {
+    margin: 20px;
+    font-size: 1.1rem;
+    white-space: pre;
+} 
+.sly a {
+    text-decoration: none;
+    color: var(--accent);
+}
+
+.sly .button {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--background);
+    padding: 5px;
+    border-radius: 5px;
+}
+/* Debugger */
+.sly-debugger ol {
+    line-height: 10;
+}
+/* Inspector */
+.sly-inspector nav {
+    font-size: 1.3rem;
+}
+.sly-inspector nav {
+    min-width: 100%;
+}
+.sly-inspector nav a {
+    color: var(--foreground);
+}
+.browser-button {
+    font-size: 1.5rem;
+}
+#browser-input {
+    padding-left: 5px;
+    text-decoration: none;
+}
+
+.sly-inspector main {
+    line-height: 1.7;
+}
+
+.sly-inspector-field {
+
+}
+
+.sly-inspector-label {
+    font-style: italic;
+}
