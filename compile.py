@@ -16,28 +16,16 @@ from .sly import *
 from . import slynk, util, sexpdata
 
 
-def add_regions_temporarily(view, regions, duration, *args):
-    id = uuid.uuid4().hex
-    view.add_regions(id, regions, *args)
-    set_timeout_async(lambda: view.erase_regions(id), duration)
-
-
-def highlight_region (view, region, duration=None, *args):
-    config = settings().get("compilation")
-    if not duration:
-       duration = config['highlight_duration'] * 1000
-    add_regions_temporarily(view, [region], duration, *args)
-
-
 def compile_region(view, window, session, region):
     if region.size() == 0: return
     config = settings().get("compilation")
+    highlighting = settings().get("highlighting")
     # we can't do regular destructuring because for some dumb reason emacs has
     # line numbers in N* but column numbers in N (wtaf)
     row, col = view.rowcol(region.begin()) 
     package_info = util.current_package(view, region.begin(), True)
     window.status_message(f"Package information: {package_info[0]}")
-    highlight_region(view, region, None, config["highlight_form_scope"])
+    util.highlight_region(view, region, None, highlighting["form_scope"])
     parameters = { 
         "string": view.substr(region),
         "buffer_name": view.name(),
@@ -46,7 +34,7 @@ def compile_region(view, window, session, region):
     }
     if package_info[0]: 
         parameters["package"] = package_info[0]
-        highlight_region(view, package_info[1], None, config["highlight_package_scope"])
+        util.highlight_region(view, package_info[1], None, highlighting["package_scope"])
 
     asyncio.run_coroutine_threadsafe(
         session.slynk.compile_string(**parameters),
