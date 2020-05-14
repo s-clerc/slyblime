@@ -104,7 +104,11 @@ class EventBasedReplView(sublimerepl.ReplView):
             prompt = prompt + left + str(error_level) + right + terminator
         # Write-prompt makes it glitch out for some reason idky
         self.fresh_line()
+        start = self._view.size() - 1
         self.write(prompt)
+        end = self._view.size() - 1
+        self._view.settings().set("package", package)
+        self._view.settings().set("prompt-region", [start, end])
 
     def on_evaluation_aborted(self, *data):
         self.fresh_line()

@@ -2,6 +2,7 @@ import asyncio
 from bisect import bisect_left
 import re
 
+import sublime
 from sublime import *
 
 from .sexpdata import loads, dumps
@@ -89,19 +90,28 @@ def find_closest(view, point, regex, prefer_before=True):
 PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
 IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 
-# Equivalent to SLY-CURRENT-PACKAGE in output.
-def in_package_parameters_at_point(view, point, return_region=False):
-    region = find_closest_before_point(view, point, PACKAGE_REGEX)
-    # Remove the IN-PACKAGE symbol.
-    if region is None: 
-        if return_region: return None, None 
-        return region
 
-    info = IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
+# Equivalent to Sly Current Package
+def current_package(view, point=None, return_region=False):
+    settings = view.settings()
+    if settings.get("sly-repl") and (package := settings.get("package")):
+        if return_region:
+            # TODO: Find a way to get the region before the prompt and indicate as package
+            return package, Region(settings.get("prompt-region")[0], settings.get("prompt-region")[1])
+        return package
+    else:
+        if not point:
+            point = view.sel()[0].begin()
+        region = find_closest_before_point(view, point, PACKAGE_REGEX)
+        # Remove the IN-PACKAGE symbol.
+        if region is None: 
+            if return_region: return None, None 
+            return None
 
-    if return_region:
-        return info, region
+        info = IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
 
+        if return_region:
+            return info, region
 
 def compute_flags(flags):
     computed_flags = 0
@@ -115,5 +125,5 @@ def safe_int(value: str) -> int:
     except ValueError:
         return None
 
-
-
+def load_resource(path):
+    return sublime.load_resource(f"Packages/{__name__.split('.')[0]}/{path}")
