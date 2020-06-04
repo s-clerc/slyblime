@@ -186,14 +186,14 @@ def parse_inspection(inspection):
     inspection.content = [parse_element(element) for element in inspection.content]
     return inspection
 
-def _extract_properties(expression):
+def extract_properties(expression):
     thread = str(expression[1])
     tag = str(expression[2])
     return thread, tag
 
 
-def _extract_question_properties(expression):
-    thread, tag = _extract_properties(expression)
+def extract_question_properties(expression):
+    thread, tag = extract_properties(expression)
     prompt = str(expression[3])
     initial_value = expression[4] if len(expression) > 4 and expression[4] else ""
     return thread, tag, prompt, initial_value
