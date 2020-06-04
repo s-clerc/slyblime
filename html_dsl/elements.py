@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 def flatten(source: Any):
     # So it doesn't flatten BaseHtmlElements which are lists now
-    if type(source) in [BaseHtmlElement, str]:
+    if isinstance(source, BaseHtmlElement) or isinstance(source, str):
         yield source
     elif isinstance(source, Iterable):
         for element in source:
@@ -22,10 +22,10 @@ class BaseHtmlElement(list):
         self.no_content = no_content
 
     def __call__(self, **attrs) -> "BaseHtmlElement":
-        element = BaseHtmlElement(self.name)
         if "_class" in attrs:
             attrs["class"] = attrs.pop("_class")
         element.attrs.update(attrs)
+        element = type(self)(self.name)
         element.parent = self.parent
         element.single = self.single
         element.no_content = self.no_content
@@ -38,6 +38,7 @@ class BaseHtmlElement(list):
             return super().__getitem__(children)
         element = BaseHtmlElement(self.name)
         element.attrs.update(self.attrs)
+        element = type(self)(self.name)
         true_children = list(flatten(children))
         for one in true_children:
             if isinstance(one, BaseHtmlElement):
@@ -51,8 +52,8 @@ class BaseHtmlElement(list):
         if type(addend) == int:
             addend = str(addend)
             
-        element = BaseHtmlElement(self.name)
         element.attrs.update(self.attrs)
+        element = type(self)(self.name)
         true_children = list(flatten(addend))
         for one in true_children:
             if isinstance(one, BaseHtmlElement):
@@ -90,7 +91,7 @@ class BaseHtmlElement(list):
         if self.attrs["id"] == id:
             return self
         for element in self:
-            if type(element) != BaseHtmlElement:
+            if not isinstance(element, BaseHtmlElement):
                 continue
             nested_element = element.get_element_by_id(id)
             if nested_element is not None:
