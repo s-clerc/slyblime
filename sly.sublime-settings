@@ -116,5 +116,8 @@
     "duration": 2,
     "form_scope": "region.bluish",
     "package_scope": "region.greenish",
+  },
+  "inspector": {
+    "fixed_spacing": 2
   }
 }
