@@ -143,7 +143,7 @@ class SlynkClient(Dispatcher):
             self.emit("disconnect")
 
     async def handle_read(self, data):
-        print(data)
+        print(f"handle-read: {data}")
         expression = loads(data.decode("utf-8"))
         command = str(expression[0]).lower()[1:]  # This should be a keyword symbol
         parameter = expression[1]
@@ -223,22 +223,24 @@ class SlynkClient(Dispatcher):
         return future.result()
 
     async def read_from_minibuffer_handler(self, expression):
-        thread, tag, prompt, initial_value = _extract_question_properties(expression)
+        thread, tag, prompt, initial_value = extract_question_properties(expression)
+        print("OK")
         answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
+        print("DOK")
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def y_or_n_handler(self, expression):
-        thread, tag, prompt, initial_value = _extract_question_properties(expression)
+        thread, tag, prompt, initial_value = extract_question_properties(expression)
         answer = await self._futured_emit("y_or_n_p", prompt)
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def read_string_handler(self, expression):
-        thread, tag = _extract_properties(expression)
+        thread, tag = extract_properties(expression)
         string = await self._futured_emit("read_string", tag)
         self.send_message(f"(:EMACS-RETURN-STRING {thread} {tag} {dumps(string)})")
 
     def read_aborted_handler(self, expression):
-        thread, tag = _extract_properties(expression)
+        thread, tag = extract_properties(expression)
         self.emit("read_aborted", tag)
 
     # A slyfun
