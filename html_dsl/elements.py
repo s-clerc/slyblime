@@ -22,11 +22,11 @@ class BaseHtmlElement(list):
         self.is_created = False
         self.no_content = no_content
 
-    def __call__(self, **attrs) -> "BaseHtmlElement":
-        if "_class" in attrs:
-            attrs["class"] = attrs.pop("_class")
-        element.attrs.update(attrs)
+    def __call__(self, *args, **attributes) -> "BaseHtmlElement":
         element = type(self)(self.name)
+        if "_class" in attributes:
+            attributes["class"] = attributes.pop("_class")
+        element.attributes.update(attributes)
         element.parent = self.parent
         element.single = self.single
         element.no_content = self.no_content
@@ -43,6 +43,7 @@ class BaseHtmlElement(list):
         elif self.is_created and type(children) == str:
             return self.get_element_by_id(children)
         element = type(self)(self.name)
+        element.attributes.update(self.attributes)
         true_children = list(flatten(children))
         for one in true_children:
             if isinstance(one, BaseHtmlElement):
@@ -57,8 +58,8 @@ class BaseHtmlElement(list):
         if type(addend) == int:
             addend = str(addend)
             
-        element.attrs.update(self.attrs)
         element = type(self)(self.name)
+        element.attributes.update(self.attributes)
         true_children = list(flatten(addend))
         for one in true_children:
             if isinstance(one, BaseHtmlElement):
@@ -76,25 +77,25 @@ class BaseHtmlElement(list):
 
     def __repr__(self):
         blank = "  " * self.level
-        attrs = "({})".format(";".join(f"{key}={repr(self.attrs[key])}" for key in self.attrs)) if self.attrs else ""
+        attributes = "({})".format(";".join(f"{key}={repr(self.attributes[key])}" for key in self.attributes)) if self.attributes else ""
         children = "\n".join(repr(child) if isinstance(child, BaseHtmlElement) else blank + repr(child) for child in self)
         
         if self.single or self.no_content:
-            return f"{blank}{self.name}{attrs}"
-        return f"{blank}{self.name}{attrs}[\n{children}]"
+            return f"{blank}{self.name}{attributes}"
+        return f"{blank}{self.name}{attributes}[\n{children}]"
 
     def __str__(self):
         blank = "  " * self.level
-        attrs = " {}".format(" ".join(f"""{key.replace("_", "-")}='{str(self.attrs[key])}'""" for key in self.attrs)) if self.attrs else ""
         children = "\n".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self)        
+        attributes = " {}".format(" ".join(f"""{key.replace("_", "-")}='{str(self.attributes[key])}'""" for key in self.attributes)) if self.attributes else ""
         if self.single:
-            return f"{blank}<{self.name}{attrs}>"
+            return f"{blank}<{self.name}{attributes}>"
         elif self.no_content:
-            return f"{blank}<{self.name}{attrs}>"
-        return f"{blank}<{self.name}{attrs}>\n{children}\n{blank}</{self.name}>"
+            return f"{blank}<{self.name}{attributes} \>"
+        return f"{blank}<{self.name}{attributes}>{children}{blank}</{self.name}>"
 
     def get_element_by_id(self, id):
-        if self.attrs["id"] == id:
+        if self.attributes["id"] == id:
             return self
         for element in self:
             if not isinstance(element, BaseHtmlElement):
