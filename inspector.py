@@ -24,19 +24,33 @@ if "futures" not in globals():
 
 
 async def async_run(session, window, **kwargs):
-    new = kwargs["new"] if "new" in kwargs else False
+    not_open = kwargs["not_open"] if "not_open" in kwargs else False
     switch = kwargs["switch"] if "switch" in kwargs else False
     try:
         expression = await show_input_panel(
             session,
             "Evaluee for inspection:",
             "")
-        if new or not nearest_inspector:
-            Inspector(session, window, expression)
-        else:
+        recent_inspectors = sorted(
+            session.inspectors.values(),
+            key=lambda i: i.last_modified,
+            reverse=True)
+        print(recent_inspectors)
+        print(session.inspectors)
+        done = False
+        for i, inspector in enumerate(recent_inspectors):
+            if not_open and inspector.is_open:
+                continue
+            if not inspector.is_open:
+                print("reöpening")
+                inspector.reöpen(window)
             if switch:
-                window.focus_sheet(nearest_inspector.sheet)
-            await nearest_inspector.inspect(expression)
+                window.focus_sheet(inspector.sheet)
+            done = True
+            await inspector.inspect(expression)
+        # No closed inspector is avaliable in pool
+        if not done:
+            Inspector(session, window, expression)
 
     except Exception as e:
         print(e)
@@ -221,13 +235,13 @@ def parse_inspector(id, target_inspector):
 class Inspector():
     def __init__ (self, session, window, query=None, package="COMMON-LISP-USER"):
         self.session = session
-        self.window = window
         self.slynk = session.slynk
         self.html = "System ready..."
-        self.sheet = self.window.new_html_sheet("inspection", self.html)
         self.id = uuid.uuid4().hex
         self.last_modified = datetime.now()
+        self.reöpen(window)
         inspectors[self.id] = self
+        self.session.inspectors[self.id] = self
         if query:
             asyncio.run_coroutine_threadsafe(
                 self.inspect(query, package), 
@@ -237,9 +251,8 @@ class Inspector():
     # I want to incrementally edit the HTML DOM-style.
     def flip(self):
         global nearest_inspector
-        print(self.html)
         self.sheet.set_contents(str(self.html))
-        nearest_inspector = self
+        self.session.nearest_inspector = self
         self.last_modified = datetime.now()
 
     @property
@@ -255,9 +268,12 @@ class Inspector():
     def name(self):
         del self._name
 
+    def reöpen(self, window):
+        self.sheet = window.new_html_sheet("inspection", "System ready...")
+
     @property
     def is_open(self):
-        return self.sheet.view() is not None
+        return self.sheet.window() is not None
     
     async def inspect(self, query, package=None):
         try:

@@ -50,6 +50,7 @@ class SlynkSession:
                         read_from_minibuffer=self.on_read_from_minibuffer,
                         y_or_n_p=self.on_y_or_n)
         self.inspectors = {}
+        self.nearest_inspector = None
 
     async def connect(self):
         slynk = self.slynk

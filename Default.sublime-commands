@@ -61,4 +61,9 @@
     "command": "inspect",
 
   },
+    {
+    "caption": "Sly: inspect in new inspector",
+    "command": "inspect",
+    "args": {"not_open": true}
+  },
 ]
