@@ -1,33 +1,60 @@
 .sly-inspector {
     margin: 20px;
     font-size: 1.1rem;
-    white-space: pre;
+    text-indent: -3em;
 } 
 .sly a {
     text-decoration: none;
     color: var(--accent);
 }
 
-.sly .button {
+/* Buttons */
+
+
+.sly.button a {
     display: inline-block;
     background-color: var(--accent);
-    color: var(--background);
-    padding: 5px;
+    color: color(var(--background) min-contrast(var(--foreground) 4.5));
+    padding: 0.15rem;
     border-radius: 5px;
 }
+
+.sly.button.preferred a {
+    background-color: var(--greenish);
+    font-weight: bold;
+}
+
+/* Checkboxes */
+.sly.checkbox {
+    display: inline-block;
+    border-radius: 5px;
+    background-color: var(--cyanish);
+    color: var(--background);
+    min-width: 1rem;
+    min-height: 1rem;
+    padding: 0 0.3rem;
+}
+
+.sly.checkbox.checked {
+    background-color: var(--orangish);
+}
+
 /* Debugger */
 .sly-debugger ol {
-    line-height: 10;
+    line-height: 2;
+}
+.sly-debugger span {
+    line-height: 1.5;
 }
 /* Inspector */
 .sly-inspector nav {
     font-size: 1.3rem;
-}
-.sly-inspector nav {
     min-width: 100%;
 }
+
 .sly-inspector nav a {
     color: var(--foreground);
+    padding: 0 0.5rem;
 }
 .browser-button {
     font-size: 1.5rem;
