@@ -32,8 +32,13 @@ def design(debug_data, future_id):
     # Restarts
     for index, restart in enumerate(debug_data.restarts):
         label = restart[0].lower().capitalize()
+        if len(label) > 0 and label[0] == "*":
+            is_preferred = True
+            label = label[1:]
+        else: 
+            is_preferred = False
         html += (
-            f'<li><a class="button" href=\'{url("restart", index)}\'>{escape(label)}</a>'
+            f'<li><span class="sly button {"preferred" if is_preferred else ""}"><a href=\'{url("restart", index)}\'>{escape(label)}</a></span>'
             f' {escape(restart[1])}</li>')
     html += (
         '</ol><hr><ol start="1">'
