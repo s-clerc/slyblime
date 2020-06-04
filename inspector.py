@@ -185,7 +185,6 @@ class InspectorSheetUrlCommand(sublime_plugin.WindowCommand):
 
     async def async_run(self, **q):
       try:
-        print(q)
         q = slynk.util.DictAsObject(q)
         inspector = inspectors[q.id]
         if q.mode == "browser":
@@ -234,9 +233,11 @@ class Inspector():
                 self.inspect(query, package), 
                 sly.loop)
 
+    # The main reason `self.html` is not a property is just in case
+    # I want to incrementally edit the HTML DOM-style.
     def flip(self):
-        print(repr(self.html))
         global nearest_inspector
+        print(self.html)
         self.sheet.set_contents(str(self.html))
         nearest_inspector = self
         self.last_modified = datetime.now()
@@ -259,7 +260,6 @@ class Inspector():
         return self.sheet.view() is not None
     
     async def inspect(self, query, package=None):
-        print("hi")
         try:
             self.html = design(
                 self.id,
