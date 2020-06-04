@@ -37,8 +37,31 @@ class InspectCommand(sublime_plugin.WindowCommand):
             sly.loop)
 
 
-def escape(string):
-    return html.escape(string).replace(" ", "&nbsp;")
+SPACES_3 = re.compile(r" {3,}")
+SPACES_2 = re.compile(r" {2,}")
+
+def escape(string, setting=None):
+    escaped = html.escape(string)
+    setting = setting or settings().get("inspector")["fixed_spacing"]
+    # The simple case
+    if setting not in [1, 2]:
+        if setting == 0:
+            replacement = " "
+        elif setting == 3:
+            replacement = "&nbsp;"
+        else:
+            replacement = setting
+        return escaped.replace(" ", replacement)
+    elif setting == 1:
+        matches = SPACES_3.finditer(escaped)
+    elif setting == 2:
+        matches = SPACES_2.finditer(escaped)
+    escaped = list(escaped)
+    for match in matches:
+        start, end = match.span()
+        length = end - start
+        escaped[start:end+1] = ["&nbsp;"] * length
+    return "".join(escaped)
 
 
 def url(id, mode, index=None):
