@@ -6,11 +6,13 @@ from operator import itemgetter
 from . import slynk, sexpdata, sly
 from .util import *
 from .html_dsl.elements import *
+from . import custom_elements as X
 import logging
 import functools
 import concurrent.futures
 import uuid
 import html
+import re
 from datetime import datetime
 
 from . import pydispatch
@@ -93,6 +95,26 @@ def linewise(content):
         lines.append(line)
     return lines
 
+INDICATOR_REGEX = re.compile(r"@\d+(?==)")
+
+# Sadly sublime text does support `<sub></sub>`
+def to_subscript_unicode(string):
+    map = {
+        "0": "₀",
+        "1": "₁",
+        "2": "₂",
+        "3": "₃",
+        "4": "₄",
+        "5": "₅",
+        "6": "₆",
+        "7": "₇",
+        "8": "₈",
+        "9": "₉",
+    }
+    output = ""
+    for character in string:
+        output += map[character] 
+    return output
 
 def structure_content(id, content):
     # Split content into lines
@@ -100,10 +122,31 @@ def structure_content(id, content):
     def present_element(line):
         if type(line) == str:
             return escape(line)
-        link_action = line.type.lower()
-        return A(
-            _class=f"sly-inspector-link {link_action}",
-            href=url(id, link_action, line.index))[escape(line.content)]
+        line_mode = line.type.lower()
+        precomputed_url = url(id, line_mode, line.index)
+        if line_mode == "value":
+            if match := INDICATOR_REGEX.match(line.content):
+                indicator = SPAN(_class="sly subscript")[
+                    to_subscript_unicode(match.group(0)[1:])
+                ]
+                start = match.span()[1]+1
+            else:
+                indicator = ""
+                start=0
+            return A(
+                _class=f"sly-inspector-link {line_mode}",
+                href=precomputed_url)[
+                    escape(line.content[start:]),
+                    indicator
+                ]
+        elif line_mode == "action":
+            if line.content in ["[ ]", "[X]"]:
+                return X.CHECKBOX(checked=line.content == "[X]",
+                                  href=precomputed_url)
+            else:
+                return X.BUTTON(href=precomputed_url)[
+                    escape(line.content.strip())[1:-1]
+                ]
 
     return [
         DIV(_class="sly-inspector-field")[
