@@ -16,9 +16,10 @@ def flatten(source: Any):
 class BaseHtmlElement(list):
     def __init__(self, name: str, single: bool = False, no_content: bool = False):
         self.name = name
-        self.attrs: dict = {}
+        self.attributes: dict = {}
         self.parent: Optional[BaseHtmlElement] = None
         self.single = single
+        self.is_created = False
         self.no_content = no_content
 
     def __call__(self, **attrs) -> "BaseHtmlElement":
@@ -29,6 +30,9 @@ class BaseHtmlElement(list):
         element.parent = self.parent
         element.single = self.single
         element.no_content = self.no_content
+        if len(args) > 0 and args[0] is None:
+            element.is_created = True
+            element.no_content = True
         return element
 
     def __getitem__(self, children) -> "BaseHtmlElement":
@@ -36,8 +40,8 @@ class BaseHtmlElement(list):
         # Assumes that elements will never be single ints
         if type(children) in [int, slice]:
             return super().__getitem__(children)
-        element = BaseHtmlElement(self.name)
-        element.attrs.update(self.attrs)
+        elif self.is_created and type(children) == str:
+            return self.get_element_by_id(children)
         element = type(self)(self.name)
         true_children = list(flatten(children))
         for one in true_children:
@@ -46,6 +50,7 @@ class BaseHtmlElement(list):
         element.extend(true_children)
         element.single = self.single
         element.no_content = self.no_content
+        element.is_created = True
         return element
 
     def __add__(self, addend):
@@ -62,6 +67,7 @@ class BaseHtmlElement(list):
         element.extend(true_children)
         element.single = self.single
         element.no_content = self.no_content
+        element.is_created = self.is_created
         return element
         
     @property
