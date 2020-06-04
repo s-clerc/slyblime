@@ -254,6 +254,10 @@ class Inspector():
     def name(self):
         del self._name
 
+    @property
+    def is_open(self):
+        return self.sheet.view() is not None
+    
     async def inspect(self, query, package=None):
         print("hi")
         try:
