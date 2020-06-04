@@ -71,11 +71,12 @@ def structure_content(id, content):
         return A(
             _class=f"sly-inspector-link {link_action}",
             href=url(id, link_action, line.index))[escape(line.content)]
+
     return [
-        SPAN(_class="sly-inspector-field")[
+        DIV(_class="sly-inspector-field")[
             [SPAN(_class="sly-inspector-label")[
                     present_element(line[0]),
-                ], " = ",
+                ], ": ",
                 [present_element(element) for element in line[2:]]
             ] if len(line) > 2 and line[1] == ": " 
               else [present_element(element) for element in line],
@@ -95,7 +96,7 @@ def design(id, inspection):
             A(_class="browser-button", href=url(id, "browser", "refresh"))["⟲"],
             A(id="browser-input", href=url(id, "browser", "input"))[escape(inspection.title)]
         ], BR,
-        MAIN[
+        DIV[
             structure_content(id, inspection.content)
         ]
     ]]
