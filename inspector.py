@@ -11,21 +11,31 @@ import functools
 import concurrent.futures
 import uuid
 import html
+from datetime import datetime
 
 from . import pydispatch
 
 if "futures" not in globals():
     futures = {}
     inspectors = {}
+    nearest_inspector = None
 
 
-async def async_run(session, **kwargs):
+async def async_run(session, window, **kwargs):
+    new = kwargs["new"] if "new" in kwargs else False
+    switch = kwargs["switch"] if "switch" in kwargs else False
     try:
         expression = await show_input_panel(
             session,
             "Evaluee for inspection:",
             "")
-        Inspector(session, expression)
+        if new or not nearest_inspector:
+            Inspector(session, window, expression)
+        else:
+            if switch:
+                window.focus_sheet(nearest_inspector.sheet)
+            await nearest_inspector.inspect(expression)
+
     except Exception as e:
         print(e)
 
@@ -33,7 +43,7 @@ async def async_run(session, **kwargs):
 class InspectCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         asyncio.run_coroutine_threadsafe(
-            async_run(sly.getSession(self.window.id()), **kwargs), 
+            async_run(sly.getSession(self.window.id()), self.window, **kwargs), 
             sly.loop)
 
 
@@ -167,13 +177,14 @@ def parse_inspector(id, target_inspector):
         return id
 
 class Inspector():
-    def __init__ (self, session, query=None, package="COMMON-LISP-USER"):
+    def __init__ (self, session, window, query=None, package="COMMON-LISP-USER"):
         self.session = session
-        self.window = session.window
+        self.window = window
         self.slynk = session.slynk
         self.html = "System ready..."
         self.sheet = self.window.new_html_sheet("inspection", self.html)
         self.id = uuid.uuid4().hex
+        self.last_modified = datetime.now()
         inspectors[self.id] = self
         if query:
             asyncio.run_coroutine_threadsafe(
@@ -182,7 +193,10 @@ class Inspector():
 
     def flip(self):
         print(repr(self.html))
+        global nearest_inspector
         self.sheet.set_contents(str(self.html))
+        nearest_inspector = self
+        self.last_modified = datetime.now()
 
     @property
     def name(self):
