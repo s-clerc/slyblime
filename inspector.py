@@ -28,7 +28,7 @@ async def async_run(session, window, **kwargs):
     switch = kwargs["switch"] if "switch" in kwargs else False
     try:
         expression = await show_input_panel(
-            session,
+            session.loop, window,
             "Evaluee for inspection:",
             "")
         recent_inspectors = sorted(
@@ -210,7 +210,7 @@ class InspectorSheetUrlCommand(sublime_plugin.WindowCommand):
                 await inspector.reinspect()
             elif q.index == "input":
                 expression = await show_input_panel(
-                    sly.getSession(self.window.id()),
+                    sly.getSession(self.window.id()).loop, self.window,
                     "Evaluee for inspection:",
                     "")
                 await inspector.inspect(expression)
