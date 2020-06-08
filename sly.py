@@ -97,19 +97,36 @@ class SlynkSession:
 
 
 class ConnectSlynkCommand(sublime_plugin.WindowCommand):
-    def run(self, host=None, port=None):  # implement run method
+    def run(self, **kwargs):  # implement run method
         global loop
-        host = settings().get("default_connexion_parameters")["hostname"] if host is None else host
-        port = settings().get("default_connexion_parameters")["port"] if port is None else port
-        session = SlynkSession(host, port, self.window, loop)
         if not loop.is_running():
             threading.Thread(target=loop.run_forever).start()
-        asyncio.run_coroutine_threadsafe(session.connect(), loop)
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(**kwargs),
+            loop)
+        
+    async def async_run(self, host=None, port=None, prompt_connexion=None):
+        print("hi")
+        defaults = settings().get("default_connexion_parameters")
+        host = defaults["hostname"] if host is None else host
+        port = defaults["port"] if port is None else port
+
+        if prompt_connexion in ["both", "host", "hostname"] or host is None:
+            host = await util.show_input_panel(
+                loop, self.window, "Enter hostname", host)
+        if prompt_connexion in ["both", "port"] or port is None: 
+            port = await util.show_input_panel(
+                loop, self.window, "Enter port", str(port))
+
+        session = SlynkSession(host, port, self.window, loop)
+        await session.connect()
         addSession(self.window.id(), session)
+
 
 class DisconnectSlynkCommand(sublime_plugin.WindowCommand):
     def run(self):  # implement run method
         global loop
         session = getSession(self.window.id())
         session.slynk.disconnect()
+        del session
 
