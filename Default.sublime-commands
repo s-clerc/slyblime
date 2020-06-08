@@ -15,7 +15,11 @@
   },
   {
     "caption": "Sly: Connect to Slynk",
-    "command": "connect_slynk"
+    "command": "connect_slynk",
+    "args": {
+      "prompt_connexion": "both"
+    }
+  },
   },
   {
     "caption": "Sly: Create Inferior Lisp REPL",
