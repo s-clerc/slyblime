@@ -20,6 +20,9 @@
       "prompt_connexion": "both"
     }
   },
+  {
+    "caption": "Sly: Disconnect current slynk session",
+    "command": "disconnect_slynk"
   },
   {
     "caption": "Sly: Create Inferior Lisp REPL",
