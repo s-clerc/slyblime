@@ -85,7 +85,7 @@ class SlynkSession:
     async def on_read_from_minibuffer(self, prompt, initial_value, future):
         print("OR")
         initial_value = initial_value if initial_value else ""
-        output = await util.show_input_panel(self, prompt, initial_value)
+        output = await util.show_input_panel(self.loop, self.window, prompt, initial_value)
         future.set_result(output)
 
     async def on_y_or_n(self, prompt, future):
