@@ -139,11 +139,7 @@ class SlyCompileFile(sublime_plugin.WindowCommand):
             loop)
 
     def is_visible(self, **kwargs):
-        view = self.window.active_view()
-        matches = re.findall(
-            settings().get("compilation")["syntax_regex"], 
-            view.settings().get("syntax"))
-        return len(matches) > 0
+        return util.in_lisp_file(self.window.active_view(), settings)
 
 
 async def compile_file(window, session, path, name, load):

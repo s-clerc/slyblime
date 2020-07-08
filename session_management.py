@@ -22,7 +22,6 @@ def prepare_preview(session):
 
 
 async def session_choice(loop, window):
-  try:
     try:
         default_session = sessions.sessions.index(sessions.get_by_window(window, False, False))
     except e:
@@ -36,8 +35,7 @@ async def session_choice(loop, window):
         0,
         default_session)
     return choice if choice != -1 else None
-  except e:
-    print(e)
+
 
 class SelectSessionCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
@@ -51,5 +49,19 @@ class SelectSessionCommand(sublime_plugin.WindowCommand):
         if choice is None: return
         sessions.set_by_window(self.window, sessions.sessions[choice])
 
+
 class CloseSessionCommand:
     pass
+
+class SessionStatusIndicator(sublime_plugin.ViewEventListener):
+    def on_activated_async(self):
+        set_status(self.view)
+
+def set_status(view):
+    if not util.in_lisp_file(view, settings):
+        return
+    session = sessions.get_by_window(view.window(), indicate_failure=False)
+    if session:
+        util.set_status(view, session)
+
+
