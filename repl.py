@@ -158,8 +158,7 @@ async def create_main_repl(session):
         view.set_scratch(True)
         affixes = settings().get("repl")["view_title_affixes"]
         view.set_name(affixes[0] + str(repl.channel.id) + affixes[1])
-        view.set_status("slynk", 
-            "【" + slynk.connexion_info.lisp_implementation.name + "】" + slynk.host + ":" + str(slynk.port))
+        util.set_status(view, session)
         return rv
     except Exception as e:
         traceback.print_exc()

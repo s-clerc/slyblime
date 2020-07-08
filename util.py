@@ -4,6 +4,7 @@ import re
 
 import sublime
 from sublime import *
+from typing import *
 
 from .sexpdata import loads, dumps
 
@@ -139,3 +140,21 @@ def highlight_region (view, region, config, duration=None, *args):
     if not duration:
        duration = config['duration'] * 1000
     add_regions_temporarily(view, [region], duration, *args)
+
+def set_status(view, session):
+    slynk = session.slynk
+    message = [
+        "" ,
+        slynk.connexion_info.lisp_implementation.name,
+        "❭",
+        slynk.host, 
+        ":",
+        str(slynk.port)]
+    view.set_status("slynk", "".join(message))
+
+
+def in_lisp_file(view, settings: Callable):
+    matches = re.findall(
+        settings().get("compilation")["syntax_regex"], 
+        view.settings().get("syntax"))
+    return len(matches) > 0
