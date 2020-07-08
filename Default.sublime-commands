@@ -73,4 +73,8 @@
     "command": "inspect",
     "args": {"not_open": true}
   },
+  {
+    "caption": "Sly: Assign Slynk connexion to window",
+    "command": "select_session",
+  }
 ]
