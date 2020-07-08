@@ -7,7 +7,6 @@ from sublime import *
 
 from .sexpdata import loads, dumps
 
-from .sly import settings
 import uuid
 
 def get_if_in(dictionary, *items):
@@ -33,7 +32,6 @@ async def show_input_panel(loop, window, prompt, initial_value, on_change=None):
 
 async def show_quick_panel(loop, window, items, flags, selected_index=0, on_highlighted=None):
     future = loop.create_future()
-    print("OK")
     def on_done(index):
         nonlocal future
         async def set_result(future, index):
@@ -137,8 +135,7 @@ def add_regions_temporarily(view, regions, duration, *args):
     set_timeout_async(lambda: view.erase_regions(id), duration)
 
 
-def highlight_region (view, region, duration=None, *args):
-    config = settings().get("highlighting")
+def highlight_region (view, region, config, duration=None, *args):
     if not duration:
        duration = config['duration'] * 1000
     add_regions_temporarily(view, [region], duration, *args)
