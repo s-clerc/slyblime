@@ -25,7 +25,7 @@ def compile_region(view, window, session, region):
     row, col = view.rowcol(region.begin()) 
     package_info = util.current_package(view, region.begin(), True)
     window.status_message(f"Package information: {package_info[0]}")
-    util.highlight_region(view, region, None, highlighting["form_scope"])
+    util.highlight_region(view, region, highlighting, None, highlighting["form_scope"])
     parameters = { 
         "string": view.substr(region),
         "buffer_name": view.name(),
@@ -34,7 +34,7 @@ def compile_region(view, window, session, region):
     }
     if package_info[0]: 
         parameters["package"] = package_info[0]
-        util.highlight_region(view, package_info[1], None, highlighting["package_scope"])
+        util.highlight_region(view, package_info[1], highlighting, None, highlighting["package_scope"])
 
     asyncio.run_coroutine_threadsafe(
         session.slynk.compile_string(**parameters),
@@ -216,7 +216,12 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
 
             view.show_at_center(point)
             snippet_region = find_snippet_region(view, location["snippet"], point)
-            highlight_region(view, snippet_region, None, config["note_regions"]["highlight_scope"])
+            highlight_region(
+                view,
+                snippet_region,
+                settings().get("highlighting"),
+                None,
+                config["note_regions"]["highlight_scope"])
             self.window.focus_view(view)
         except Exception as e:
             self.window.status_message("Failed to process URL")
