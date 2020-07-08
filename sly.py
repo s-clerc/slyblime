@@ -25,10 +25,9 @@ class Sessions:
     Singleton object to store all the currently active sessions.
     Designed to allow a natural number of windows to be connected to one session.
     """
-    def __init__(self):
-        self.sessions = []
-        self.window_assignment: Dict[int, (Window, SlynkSession)] = {}
-
+    def __init__(self, sessions=[], window_assignment: Dict[int, Tuple[Window, SlynkSession]]={}):
+        self.sessions = sessions
+        self.window_assignment = window_assignment
     def add(self, session):
         self.sessions.append(session)
 
@@ -73,7 +72,7 @@ class Sessions:
         self.window_assignment[window.id()] = (window, session)
         if message:
             window.status_message("Slynk assigned to window")
-        slynk = session.slynk
+        print(f"Error {e}")
 
     def window_ids_for_session(self, session) -> List[int]:
         return [window_id for window_id, (__, window_session) in self.window_assignment.items()
@@ -196,3 +195,6 @@ if "ready" not in globals():
     if settings().get("debug"):
         loop.set_debug(True)
         logging.basicConfig(level=logging.DEBUG)
+else:
+    sessions_1 = Sessions(sessions.sessions, sessions.window_assignment)
+    sessions = sessions_1
