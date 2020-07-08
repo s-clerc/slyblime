@@ -44,11 +44,12 @@ class SelectSessionCommand(sublime_plugin.WindowCommand):
         asyncio.run_coroutine_threadsafe(
             self.async_run(**kwargs),
             loop)
+        set_status(self.window.active_view())
 
     async def async_run(self, **kwargs):
         choice = await session_choice(loop, self.window)
         if choice is None: return
-        sessions.set_by_window(window, sessions.sessions[session_choice])
+        sessions.set_by_window(self.window, sessions.sessions[choice])
 
 class CloseSessionCommand:
     pass
