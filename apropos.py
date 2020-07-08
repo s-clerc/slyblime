@@ -10,17 +10,13 @@ import functools
 import concurrent.futures
 
 class AproposCommand(sublime_plugin.WindowCommand):
-
     def run(self, **kwargs):
-        try:
-            session = getSession(self.window.id())
-        except:
-            self.window.status_message("Slynk not connected")
-            global sessions
-            print(self.window.id, sessions)
-        print(kwargs)
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         external_only = True if "external_only" not in kwargs else kwargs["external_only"]
-        self.window.show_input_panel(f"À propos for {'external' if external_only else 'all'} symbols", "", functools.partial(self.confirm, external_only), None, None)
+        self.window.show_input_panel(
+            f"À propos for {'external' if external_only else 'all'} symbols", 
+            "", functools.partial(self.confirm, external_only), None, None)
 
     def confirm(self, external_only, pattern):
         global loop
@@ -30,7 +26,12 @@ class AproposCommand(sublime_plugin.WindowCommand):
 
     async def async_confirm(self, pattern, external_only=True):
         print(f"ext {external_only}")
-        session = getSession(self.window.id())
+        # Maybe this change will result in weird behaviour, idk
+        # since the session has already been checked above
+        session = sessions.get_by_window(self.window)
+        if session is None: 
+            print("Unexpected instance of session not existing after apropos return")
+            return
         apropos = await session.slynk.apropos(pattern, external_only)
         self.window.status_message(f"Apropos retrieved: {len(apropos)} matching symbols")
         previews = generate_previews(apropos)

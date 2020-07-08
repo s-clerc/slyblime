@@ -58,8 +58,10 @@ async def async_run(session, window, **kwargs):
 
 class InspectCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
+        session = sly.sessions.get_by_window(self.window)
+        if session is None: return
         asyncio.run_coroutine_threadsafe(
-            async_run(sly.getSession(self.window.id()), self.window, **kwargs), 
+            async_run(session, self.window, **kwargs), 
             sly.loop)
 
 
@@ -68,7 +70,7 @@ SPACES_2 = re.compile(r" {2,}")
 
 def escape(string, setting=None):
     escaped = html.escape(string)
-    setting = setting or settings().get("inspector")["fixed_spacing"]
+    setting = setting or sly.settings().get("inspector")["fixed_spacing"]
     # The simple case
     if setting not in [1, 2]:
         if setting == 0:
@@ -209,8 +211,10 @@ class InspectorSheetUrlCommand(sublime_plugin.WindowCommand):
             elif q.index == "refresh":
                 await inspector.reinspect()
             elif q.index == "input":
+                session = sly.sessions.get_by_window(self.window)
+                if session is None: return
                 expression = await show_input_panel(
-                    sly.getSession(self.window.id()).loop, self.window,
+                    session, self.window,
                     "Evaluee for inspection:",
                     "")
                 await inspector.inspect(expression)

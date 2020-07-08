@@ -9,6 +9,7 @@ from .slynk import slynk
 
 import logging
 import functools
+from typing import *
 
 _settings = None
 
@@ -18,30 +19,85 @@ def settings():
         _settings = load_settings("sly.sublime-settings")
     return _settings
 
-if "sessions" not in globals():
-    print("Preparing stuff for SLY")
-    sessions = {}
-    loop = asyncio.new_event_loop()
-    if settings().get("debug"):
-        loop.set_debug(True)
-        logging.basicConfig(level=logging.DEBUG)
 
-def getSession(id):
-    global sessions
-    return sessions[id]
+class Sessions:
+    """
+    Singleton object to store all the currently active sessions.
+    Designed to allow a natural number of windows to be connected to one session.
+    """
+    def __init__(self):
+        self.sessions = []
+        self.window_assignment: Dict[int, (Window, SlynkSession)] = {}
 
-def addSession(id, session):
-    global sessions
-    sessions[id] = session
+    def add(self, session):
+        self.sessions.append(session)
+
+    def remove(self, session):
+        self.sessions.remove(session)
+        for window_id, (window, window_session) in self.window_assignment:
+            if window_session is session:
+                del self.window_assignment[window_id]
+                try:
+                    window.set_status("slynk", "")
+                    window.status_message("Slynk session disconnected and unassigned")
+                except e:
+                    print(f"Error with status message: {e}")
+
+    def get_by_window_id(self, id: int):
+        return self.window_assignment[id][1] if id in self.window_assignment else None
+
+    # This function also performs a lot of UX work the one above doesn't
+    # autoset is actually True by default, None means consult user settings.
+    def get_by_window(self, window, indicate_failure=True, autoset: bool=None):
+        if autoset is None:
+            try:
+                autoset = settings().get("autoset_slynk_connexion")
+            except e:
+                autoset = True
+        id = window.id()
+        if id in self.window_assignment:
+            return self.window_assignment[id][1]
+        # The session desired is obvious if only one is there
+        elif autoset and len(sessions) == 1:
+            self.set_by_window(window, sessions[0], False)
+            window.status_message("Automatically assigned only slynk connexion to window")
+            return sessions[0]
+        else:
+            if indicate_failure:
+                window.status_message(
+                    "Slynk not connected" if len(sessions) == 0
+                                          else "No slynk connexion assigned to window")
+            return None
+
+    def set_by_window(self, window, session, message=True):
+        self.window_assignment[window.id()] = (window, session)
+        if message:
+            window.status_message("Slynk assigned to window")
+        slynk = session.slynk
+
+    def window_ids_for_session(self, session) -> List[int]:
+        return [window_id for window_id, (__, window_session) in self.window_assignment.items()
+                          if window_session == session]
+
+    def windows_for_session(self, session) -> List[Window]:
+        return [window for __, (window, window_session) in self.window_assignment.items()
+                       if window_session == session]
+
 
 class SlynkSession:
+    """
+    This object stores all the information the plugin will use to connect 
+    and deal with (a single) slynk.
+
+    Inspectors, REPLs etc are all stored here
+    """
     def __init__(self, host, port, window, loop) -> None:
         super().__init__()
         self.slynk = slynk.SlynkClient(host, port)
         self.window = window
         self.repl_views = []
         self.loop = loop
-        self.slynk.bind(__aio_loop__ = loop,
+        self.slynk.bind(__aio_loop__=loop,
                         connect=self.on_connect,
                         disconnect=self.on_disconnect,
                         debug_setup=self.on_debug_setup,
@@ -70,7 +126,7 @@ class SlynkSession:
     async def on_debug_setup(self, debug_data):
         print("run")
         (action, index) = await debugger.show(self, debug_data)
-        if action == "restart": 
+        if action == "restart":
             await self.slynk.debug_invoke_restart(debug_data.level, index, debug_data.thread)
         elif action == "frame":
             await self.slynk.debug_restart_frame(index, debug_data.thread)
@@ -83,7 +139,6 @@ class SlynkSession:
         print(f":return {args}")
 
     async def on_read_from_minibuffer(self, prompt, initial_value, future):
-        print("OR")
         initial_value = initial_value if initial_value else ""
         output = await util.show_input_panel(self.loop, self.window, prompt, initial_value)
         future.set_result(output)
@@ -104,7 +159,7 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
         asyncio.run_coroutine_threadsafe(
             self.async_run(**kwargs),
             loop)
-        
+
     async def async_run(self, host=None, port=None, prompt_connexion=None):
         print("hi")
         defaults = settings().get("default_connexion_parameters")
@@ -114,19 +169,30 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
         if prompt_connexion in ["both", "host", "hostname"] or host is None:
             host = await util.show_input_panel(
                 loop, self.window, "Enter hostname", host)
-        if prompt_connexion in ["both", "port"] or port is None: 
+        if prompt_connexion in ["both", "port"] or port is None:
             port = await util.show_input_panel(
                 loop, self.window, "Enter port", str(port))
 
         session = SlynkSession(host, port, self.window, loop)
         await session.connect()
-        addSession(self.window.id(), session)
+        sessions.add(session)
+        sessions.set_by_window(self.window, session)
 
 
 class DisconnectSlynkCommand(sublime_plugin.WindowCommand):
     def run(self):  # implement run method
         global loop
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         session.slynk.disconnect()
-        del session
+        sessions.remove(session)
 
+
+if "ready" not in globals():
+    ready = True
+    print("Preparing stuff for SLY")
+    sessions = Sessions()
+    loop = asyncio.new_event_loop()
+    if settings().get("debug"):
+        loop.set_debug(True)
+        logging.basicConfig(level=logging.DEBUG)
