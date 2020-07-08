@@ -1,4 +1,4 @@
-{
+{ "autoset_slynk_connexion": true,
   "maximum_timeout": 1,
   "default_connexion_parameters": {
     "hostname": "localhost",

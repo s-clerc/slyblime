@@ -45,7 +45,8 @@ class SlyCompileSelection(sublime_plugin.TextCommand):
         global loop
         view = self.view
         window = view.window()
-        session = getSession(window.id())
+        session = sessions.get_by_window(window)
+        if session is None: return
 
         selections = view.sel()
         for selection in selections:
@@ -70,7 +71,8 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
         global loop
         view = self.view
         window = view.window()
-        session = getSession(window.id())
+        session = sessions.get_by_window(window)
+        if session is None: return
         MAX_SEARCH_ITERATIONS = \
             settings().get("compilation")['max_search_iterations']
 
@@ -124,7 +126,8 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
 
 class SlyCompileFile(sublime_plugin.WindowCommand):
     def run(self, load=False):
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         path = self.window.active_view().file_name()
         if path is None:
             self.window.status_message(
@@ -282,7 +285,8 @@ class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
 
 class SlyShowNotesViewCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         path = self.window.active_view().file_name()
         show_notes_view(self.window, path, basename(path), compilation_results[str(path)])
 
@@ -293,7 +297,8 @@ class SlyShowNotesViewCommand(sublime_plugin.WindowCommand):
 
 class SlyLoadFileCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         path = self.window.active_view().file_name()
         if path not in compilation_results: 
             self.window.status_message("Path to compiled file not found")
@@ -307,7 +312,8 @@ class SlyLoadFileCommand(sublime_plugin.WindowCommand):
 
 class SlyRemoveNoteHighlighting(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         self.window.active_view().erase_regions("sly-compilation-notes")
 
     def is_visible(self, **kwargs):

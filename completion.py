@@ -102,7 +102,9 @@ class SlyCompletionListener(sublime_plugin.EventListener):
     def on_query_completions(self, view, pattern, locations):
         if not (classifier := get_classifier(view.settings().get("syntax"))):
             return None
-        session = sly.getSession(view.window().id())
+        # Failure will not be indicated because it would be incredibly annoying otherwise
+        session = sly.sessions.get_by_window(self.window, indicate_failure=False)
+        if session is None: return
         try:
             completions = asyncio.run_coroutine_threadsafe(
                 session.slynk.completions(pattern), 

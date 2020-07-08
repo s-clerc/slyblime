@@ -167,7 +167,8 @@ async def create_main_repl(session):
 class CreateReplCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         global loop
-        session = getSession(self.window.id())
+        session = sessions.get_by_window(self.window)
+        if session is None: return
         asyncio.run_coroutine_threadsafe(create_main_repl(session), loop)
 
 
