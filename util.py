@@ -142,14 +142,17 @@ def highlight_region (view, region, config, duration=None, *args):
     add_regions_temporarily(view, [region], duration, *args)
 
 def set_status(view, session):
-    slynk = session.slynk
-    message = [
-        "" ,
-        slynk.connexion_info.lisp_implementation.name,
-        "❭",
-        slynk.host, 
-        ":",
-        str(slynk.port)]
+    if session:
+        slynk = session.slynk
+        message = [
+            "" ,
+            slynk.connexion_info.lisp_implementation.name,
+            "❭",
+            slynk.host, 
+            ":",
+            str(slynk.port)]
+    else:
+        message = []
     view.set_status("slynk", "".join(message))
 
 
