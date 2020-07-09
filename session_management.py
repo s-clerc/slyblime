@@ -18,7 +18,7 @@ def prepare_preview(session):
     try: repl_info = str(len(session.repl_views)) + " REPLs opened"
     except e: repl_info = "Unknown number of open REPLs"
 
-    return [lisp_info, port_info]
+    return [lisp_info, port_info, repl_info]
 
 
 async def session_choice(loop, window):
