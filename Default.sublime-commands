@@ -21,8 +21,9 @@
     }
   },
   {
-    "caption": "Sly: Disconnect current slynk session",
-    "command": "disconnect_slynk"
+    "caption": "Sly: Close current slynk session",
+    "command": "close_session",
+    "args": {"current": true}
   },
   {
     "caption": "Sly: Create Inferior Lisp REPL",
@@ -74,7 +75,11 @@
     "args": {"not_open": true}
   },
   {
-    "caption": "Sly: Assign Slynk connexion to window",
-    "command": "select_session",
+    "caption": "Sly: Assign a Slynk connexion to window",
+    "command": "select_session"
+  },
+  {
+    "caption": "Sly: Close a Slynk connexion",
+    "command": "close_session"
   }
 ]

@@ -50,18 +50,34 @@ class SelectSessionCommand(sublime_plugin.WindowCommand):
         sessions.set_by_window(self.window, sessions.sessions[choice])
 
 
-class CloseSessionCommand:
-    pass
+class CloseSessionCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(**kwargs),
+            loop)
+        set_status(self.window.active_view())
+
+    async def async_run(self, current=False):
+        if current:
+            session = sessions.get_by_window(self.window)
+        else:
+            choice = await session_choice(loop, self.window)
+            if choice is None: return
+            session = sessions.sessions[choice]
+        session.slynk.disconnect()
+        sessions.remove(session)
+
+
 
 class SessionStatusIndicator(sublime_plugin.ViewEventListener):
     def on_activated_async(self):
         set_status(self.view)
 
+
 def set_status(view):
-    if not util.in_lisp_file(view, settings):
-        return
-    session = sessions.get_by_window(view.window(), indicate_failure=False)
-    if session:
-        util.set_status(view, session)
+    if util.in_lisp_file(view, settings):
+        util.set_status(
+            view, 
+            sessions.get_by_window(view.window(), indicate_failure=False))
 
 
