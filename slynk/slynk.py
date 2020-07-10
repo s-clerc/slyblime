@@ -189,7 +189,7 @@ class SlynkClient(Dispatcher):
     def ping_handler(self, expression):
         self.send_message("(:EMACS-PONG " + str(expression[1]) + " " + str(expression[2]) + ")")
 
-    async def rex(self, command, thread, package=DEFAULT_PACKAGE):
+    async def rex(self, command, thread="T", package=DEFAULT_PACKAGE):
         id = self.request_counter
         self.request_counter += 1
         message = f"(:EMACS-REX ({command}) {dumps(package)} {str(thread)} {str(id)})"
@@ -291,25 +291,22 @@ class SlynkClient(Dispatcher):
             is_cursor_placed = False
             previous_length = 0
             for form in expression:
-                output_forms.append(form)
+                output_forms.append(str(form))
                 new_length = previous_length + len(dumps(form))
                 is_cursor_within_form = previous_length <= cursor_position <= new_length
                 if is_cursor_within_form and not is_cursor_placed:
-                    output_forms.append(cursor_marker)
-                    is_cursor_placed = True
                     break
                 previous_length = new_length
-
-            if not is_cursor_placed:
-                output_forms.append(cursor_marker)
-
-            command = f"SLYNK:AUTODOC {dumps(output_forms)} :PRINT-RIGHT-MARGIN 80"
+            # We're doing the weird thing below, because at the time
+            # sexpdata was doing this weird thing where 
+            # `dumps(Symbol("SLYNK::%CURSOR-MARKER%"))` => `'"SLYNK::%CURSOR-MARKER"'`
+            command = f"SLYNK:AUTODOC '{dumps(output_forms)[:-1]} SLYNK::%CURSOR-MARKER%) :PRINT-RIGHT-MARGIN 80"
         except Exception as e:
             print("Error constructing command")
             print(e)
             return Symbol(":NOT-AVAILABLE")
         else:
-            response = await self.rex(command, ":REPL-THREAD", *args)
+            response = await self.rex(command, *args)
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
     # A defslyfun
