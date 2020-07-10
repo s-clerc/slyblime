@@ -312,6 +312,11 @@ class SlynkClient(Dispatcher):
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
     # A defslyfun
+    async def documentation_symbol(self, symbol_name):
+        documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"')
+        return documentation
+
+    # A defslyfun
     async def apropos(self, pattern, external_only=True, case_sensitive=False, *args):
         command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
         propos_list = await self.rex(command, "T", *args)
