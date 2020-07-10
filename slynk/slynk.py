@@ -778,27 +778,34 @@ class TestListener:
         print("debug R")
 
 
-async def mainA(x, y, repl):
+async def mainA(x, y, actions):
     print("main")
     await x.connect(asyncio.get_event_loop())
     await x.prepare()
-    if repl:
-        repl = await x.create_repl()
+    if "repl" in actions:
+        repl, info = await x.create_repl()
         print("REPL prepared")
-    await x.closed()
+        print(info)
+    if "docs" in actions:
+        d = await x.documentation_symbol("print")
+        print(d)
+        print(await x.autodoc("(print 12)", 5))
+    while (evaluee := input("a>>")) != "quit":
+        eval(evaluee, globals(), locals())
+    x.disconnect()
     # x.eval("(+ 2 2)")
 
 
-def main(repl):
+def main(actions):
     PYTHONASYNCIODEBUG = 1
     loop = asyncio.new_event_loop()
     x = SlynkClient("localhost", 4005)
     y = TestListener(x, loop)
-    loop.create_task(mainA(x, y, repl))
+    loop.create_task(mainA(x, y, actions))
     threading.Thread(target=loop.run_forever).start()
     print("Anyways return")
     return x
 
 
 if __name__ == '__main__':
-    main(True)
+    main(["repl", "docs"])
