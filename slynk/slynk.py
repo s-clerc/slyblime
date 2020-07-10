@@ -261,11 +261,13 @@ class SlynkClient(Dispatcher):
         return result
 
     ### Higher-level commands
-    async def create_repl(self):
+    async def create_repl(self, information_needed=False):
         id, channel = self.make_channel()
         repl = Repl(channel)
-        await self.rex(f"slynk-mrepl:create-mrepl {id}", "T")
+        information = await self.rex(f"slynk-mrepl:create-mrepl {id}", "T")
         self.repls.append(repl)
+        if information_needed:
+            return repl, information
         return repl
 
     async def prepare(self, path=pathlib.Path().parent.absolute()):
