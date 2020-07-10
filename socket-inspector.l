@@ -5,7 +5,7 @@
 
 (in-package :socket-inspector)
 
-(defparameter *rx-url* '("localhost" 4006)) 
+(defparameter *rx-url* '("localhost" 4007)) 
 
 (defparameter *tx-url* '(#(127 0 0 1) 4005))
 
