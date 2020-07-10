@@ -1,11 +1,14 @@
-from ..sexpdata import *
-from typing import Dict, Any, List, Tuple, Optional
-from .types import *
-from ..pydispatch import Dispatcher
-
 import queue
+from typing import *
 
-from . import types
+try: # Importing for ST
+    from ..sexpdata import *
+    from ..pydispatch import Dispatcher
+except ValueError: # Importing for normal python
+    from sexpdata import *
+    from pydispatch import Dispatcher
+
+from .structs import *
 
 class Channel(Dispatcher):
     _events_ = ["message_recieved"]

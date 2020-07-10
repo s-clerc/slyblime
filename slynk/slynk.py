@@ -1,11 +1,13 @@
-from .types import *
-import asyncio
-
-import threading
+import asyncio, threading, pathlib
 from sys import maxsize
-from .util import *
 
-import pathlib
+try:
+    from .util import *
+    from .structs import *
+except ImportError as e:
+    print(f"ImportError encoutered, switching gears: {e}")
+    from util import *
+    from structs import *
 
 
 class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
