@@ -2,6 +2,7 @@ import asyncio
 from bisect import bisect_left
 import re
 
+# Needed because we shadow one thing from the default ST stuff
 import sublime
 from sublime import *
 from typing import *
@@ -141,6 +142,7 @@ def highlight_region (view, region, config, duration=None, *args):
        duration = config['duration'] * 1000
     add_regions_temporarily(view, [region], duration, *args)
 
+
 def set_status(view, session):
     if session:
         slynk = session.slynk
@@ -156,8 +158,73 @@ def set_status(view, session):
     view.set_status("slynk", "".join(message))
 
 
+
 def in_lisp_file(view, settings: Callable):
     matches = re.findall(
         settings().get("compilation")["syntax_regex"], 
         view.settings().get("syntax"))
     return len(matches) > 0
+
+
+def get_scopes(view, point):
+    return view.scope_name(point).strip().split(" ")
+    
+def determine_depth(scopes):
+    depth = 0
+    for scope in scopes:
+        # TODO: replace with customisable regex
+        if ("meta.parens" or "meta.section") in scope:
+            depth += 1
+    return depth
+
+def find_toplevel_form(view, point: int=None, max_iterations=100) -> Tuple[Region, int]: 
+    point = point or view.sel()[0].begin()
+    region = view.extract_scope(point)
+    # It only has the scope of the file, so its outside
+    # a toplevel form, we need to find one.
+    if len(get_scopes(view, point)) == 1:
+        region = find_closest_before_point(view, point, r"\S")
+        distance_to_first = point - region.end() 
+        region1 = view.find(r"\S", point) # finds closest after point
+        if (point - region.end()) >= (region1.begin() - point):
+            region = region1
+    """
+     This algorithm will go through a form, going to the start
+     of every scope and checking if it is of form 
+     ["source.lisp", "meta.parens.lisp"] or something*
+     at which point it'll return the region. Otherwise, it
+     keeps on expanding the scope
+    
+     *deliberately vague in the while statement to allow for different
+     syntax scoping (e.g. "source.cl" or "source.scm").
+    """
+    point: int = region.begin()
+    scopes: str = get_scopes(view, point)
+    depth: int = determine_depth(scopes)
+    previous_region = Region(-1, -1)
+    iterations = 0
+    forward = True
+    while ((depth > 1 or len(scopes) > 2) 
+            and iterations < max_iterations):
+        if previous_region != region:
+            point = region.begin() if forward else region.end()
+        else:
+            point += -1 if forward else +1
+
+        scopes = get_scopes(view, point)
+        depth = determine_depth(scopes)
+        previous_region = region
+        region = view.extract_scope(point)
+        iterations += 1
+        # We check if we reached the "(" of a top-level form
+        # and if we did we go the opposite way until we find
+        # a scope where the extract_scope is the top-level form
+        if len(scopes) == 3 and "begin" in scopes[2]:
+            forward = False
+    if depth == 1:
+        return region
+    elif iterations >= max_iterations:
+        raise RuntimeWarning("Search iterations exceeded")
+    else:
+        return None
+
