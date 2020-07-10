@@ -79,7 +79,7 @@ def create_completion_item(completion, classifier):
         completion_format=COMPLETION_FORMAT_TEXT,
         kind=kind,
         annotation=annotation,
-        details=f"Match: {int(completion.probability*1000)} ‰")
+        details=f'<a href=\'subl:sly_completion_info {{"completion": "{name}"}}\'> M</a>atch: {int(completion.probability*1000)} ‰')
 
 def get_classifier(syntax: str) -> Classifier:
     classifiers = sly.settings().get("completion")["classifiers"]
@@ -115,5 +115,19 @@ class SlyCompletionListener(sublime_plugin.EventListener):
             print(f"Completion fetch exception: {e}")
             return
         return ([create_completion_item(completion, classifier) for completion in completions],
-                INHIBIT_WORD_COMPLETIONS|INHIBIT_EXPLICIT_COMPLETIONS)
+                INHIBIT_WORD_COMPLETIONS|INHIBIT_EXPLICIT_COMPLETIONS|DYNAMIC_COMPLETIONS)
+
+
+class SlyCompletionInfoCommand(sublime_plugin.TextCommand):
+    def run(self, edit, completion):
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(edit, completion), sly.loop)
+
+    async def async_run(self, edit, completion):
+        session = sly.sessions.get_by_window(self.view.window())
+        if session is None: 
+            return
+        docs = await session.slynk.documentation_symbol(completion)
+        docs = escape(docs).replace("\n", "<br>")
+        self.view.show_popup(str(docs), COOPERATE_WITH_AUTO_COMPLETE)
 
