@@ -39,13 +39,13 @@ class DisplayCompletion:
     annotation: str = ""
     boxed_type: str = ""
 
-def convert_display_completion(display_completion):
+def convert_display_completion(display_completion) -> Tuple[int, str, str, str]:
     return ((display_completion.indicator,
              display_completion.symbol,
              display_completion.boxed_type),
             display_completion.annotation)
 
-def determine_display(namespaces, classifier):
+def determine_display(namespaces, classifier) -> DisplayCompletion:
     for π in classifier.classifications:
         if not π.compiled_regex.match(namespaces[0]):
             continue
@@ -72,22 +72,23 @@ def determine_display(namespaces, classifier):
 
 def create_completion_item(completion, classifier):
     kind, annotation = convert_display_completion(determine_display(completion.namespaces, classifier))
+    name = completion.name
     return CompletionItem(
-        trigger=completion.name,
-        completion=completion.name,
+        trigger=name,
+        completion=name,
         completion_format=COMPLETION_FORMAT_TEXT,
         kind=kind,
         annotation=annotation,
         details=f"Match: {int(completion.probability*1000)} ‰")
 
-def get_classifier(syntax):
+def get_classifier(syntax: str) -> Classifier:
     classifiers = sly.settings().get("completion")["classifiers"]
     for classifier in classifiers:
         if re.findall(classifier["syntax_regex"], syntax):
             return convert_classifier(classifier)
 
-def convert_classifier(classifier):
-    def prepare_classification(classification):
+def convert_classifier(classifier: Dict) -> Classifier:
+    def prepare_classification(classification) -> Classification:
         classification = Classification(**classification)
         classification.compiled_regex = re.compile(classification.regex)
         return classification
@@ -99,7 +100,7 @@ def convert_classifier(classifier):
         classifier["separator"])
 
 class SlyCompletionListener(sublime_plugin.EventListener):
-    def on_query_completions(self, view, pattern, locations):
+    def on_query_completions(self, view, pattern, locations) -> Tuple[List[CompletionItem], int]:
         if not (classifier := get_classifier(view.settings().get("syntax"))):
             return None
         # Failure will not be indicated because it would be incredibly annoying otherwise
