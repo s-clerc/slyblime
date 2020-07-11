@@ -200,18 +200,20 @@ def show_notes_as_regions(window, path, result):
     compilation_results[(path, "regions")] = regions
     view.add_regions("sly-compilation-notes", regions, regional_settings["highlight_scope"], "", DRAW_EMPTY)
     view.settings().set("path-for-sly-compilation-notes", path)
+    view.settings().set("fresh-sly-compilation-notes", True)
 
 class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
     def on_hover(self, view, point, zone):
-        if zone != HOVER_TEXT: return
-        path = view.settings().get("path-for-sly-compilation-notes")
-        if not path: return
+        if not all([zone == HOVER_TEXT,
+                    is_fresh := view.settings().get("fresh-sly-compilation-notes"),
+                    path := view.settings().get("path-for-sly-compilation-notes")]): 
+            return
 
         dimensions = settings().get("compilation")["notes_view"]["note_regions"]["dimensions"]
         result = compilation_results[path]
         regions = compilation_results[(path, "regions")]
 
-        # Linear search since the regions are unsorted
+        # Linear search since the regions are unsorted :()
         hover_region_size = 100000
         hover_region_index = -1
         index = 0
@@ -260,7 +262,9 @@ class SlyRemoveNoteHighlighting(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         session = sessions.get_by_window(self.window)
         if session is None: return
-        self.window.active_view().erase_regions("sly-compilation-notes")
+        view = self.window.active_view()
+        view.erase_regions("sly-compilation-notes")
+        view.settings().set("fresh-sly-compilation-notes", False)
 
     def is_visible(self, **kwargs):
         return len(self.window.active_view().get_regions("sly-compilation-notes")) > 0
