@@ -109,9 +109,26 @@
         "highlight_scope": "region.redish",
         "dimensions": [1000, 1000],
         "strip_regions": true,
-        "ignore_snippet_after_\n": true
-    }
+        "ignore_snippet_after_\n": true,
+        "enable_hover": true,
+      },
     },
+    "annotation_groups": [
+        {"matches": "(?i).*(style-warning)+",
+         "highlight_scope": "",
+         "icon": "dot",
+         "annotation_color": "#9999FF",
+         "prefix": "[i] "},
+          {"matches": "(?i).*(warning)+",
+         "highlight_scope": "region.yellowish",
+         "icon": "dot",
+         "annotation_color": "#FFFF00",
+         "prefix": "⚠︎ "},
+        {"matches": ".*",
+         "highlight_scope": "region.redish",
+         "icon": "circle",
+         "prefix":"• "}
+      ]
   },
   "highlighting": {
     "duration": 2,
