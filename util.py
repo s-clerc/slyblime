@@ -147,9 +147,9 @@ def set_status(view, session):
     if session:
         slynk = session.slynk
         message = [
-            "" ,
+            "[",
             slynk.connexion_info.lisp_implementation.name,
-            "❭",
+            "] ",
             slynk.host, 
             ":",
             str(slynk.port)]
