@@ -13,6 +13,8 @@ from typing import *
 
 _settings = None
 
+SessionId = int
+WindowId = int
 def settings():
     global _settings
     if "_settings()" not in globals():
@@ -43,6 +45,7 @@ class SlynkSession:
                         y_or_n_p=self.on_y_or_n)
         self.inspectors = {}
         self.nearest_inspector = None
+        self.id: SessionId = None
 
     async def connect(self):
         slynk = self.slynk
@@ -120,14 +123,23 @@ class Sessions:
     Singleton object to store all the currently active sessions.
     Designed to allow a natural number of windows to be connected to one session.
     """
-    def __init__(self, sessions=[], window_assignment: Dict[int, Tuple[Window, SlynkSession]]={}):
+    def __init__(self, sessions: Dict[SessionId, SlynkSession]={}, window_assignment: Dict[WindowId, Tuple[Window, SlynkSession]]={}):
         self.sessions = sessions
         self.window_assignment = window_assignment
+        self.next_uid: SessionId = 0
+
+    @property
+    def list(self):
+        return list(self.sessions.values())
+
     def add(self, session):
-        self.sessions.append(session)
+        self.sessions[self.next_uid] = session
+        session.id = self.next_uid
+        self.next_uid += 1
 
     def remove(self, session):
-        self.sessions.remove(session)
+        self.mutated = True
+        del self.sessions[session.id]
         # It is forbidden to modify a dictionary during iteration
         copy = self.window_assignment.copy()
         for window_id, (window, window_session) in copy.items():
@@ -140,7 +152,7 @@ class Sessions:
                 except e:
                     print(f"Error with status message: {e}")
 
-    def get_by_window_id(self, id: int):
+    def get_by_window_id(self, id: WindowId):
         return self.window_assignment[id][1] if id in self.window_assignment else None
 
     # This function also performs a lot of UX work the one above doesn't
@@ -151,14 +163,15 @@ class Sessions:
                 autoset = settings().get("autoset_slynk_connexion")
             except e:
                 autoset = True
-        id = window.id()
+        id: WindowId = window.id()
         if id in self.window_assignment:
             return self.window_assignment[id][1]
         # The session desired is obvious if only one is there
         elif autoset and len(self.sessions) == 1:
-            self.set_by_window(window, self.sessions[0], False)
+            default = self.list[0]
+            self.set_by_window(window, default, False)
             window.status_message("Automatically assigned only slynk connexion to window")
-            return self.sessions[0]
+            return default
         else:
             if indicate_failure:
                 window.status_message(
@@ -171,7 +184,7 @@ class Sessions:
         if message:
             window.status_message("Slynk assigned to window")
 
-    def window_ids_for_session(self, session) -> List[int]:
+    def window_ids_for_session(self, session) -> List[WindowId]:
         return [window_id for window_id, (__, window_session) in self.window_assignment.items()
                           if window_session == session]
 
@@ -179,6 +192,8 @@ class Sessions:
         return [window for __, (window, window_session) in self.window_assignment.items()
                        if window_session == session]
 
+    def get_by_id(self, session_id: SessionId) -> SlynkSession:
+        return self.sessions[session_id]
 
 if "ready" not in globals():
     ready = True
