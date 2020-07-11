@@ -81,5 +81,9 @@
   {
     "caption": "Sly: Close a Slynk connexion",
     "command": "close_session"
+  },
+    {
+    "caption": "Sly: Open an inferior Lisp REPL",
+    "command": "sly_open_repl"
   }
 ]

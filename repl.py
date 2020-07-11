@@ -1,5 +1,5 @@
 from sublime import *
-import sublime_plugin, threading, asyncio  # import the required modules
+import sublime_plugin, threading, asyncio, queue  # import the required modules
 
 from operator import itemgetter
 import itertools
@@ -39,7 +39,7 @@ class ReplWrapper(repl.Repl):
 class EventBasedReplView(sublimerepl.ReplView):
     NEWLINE_SEQUENCE = "\n"  # To allow for future configurability
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, session, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.repl.slynk_repl.bind(
             write_string=self.on_print,
@@ -47,10 +47,25 @@ class EventBasedReplView(sublimerepl.ReplView):
             prompt=self.on_prompt,
             evaluation_aborted=self.on_evaluation_aborted,
             server_side_repl_close=self.on_server_side_repl_close)
-        self.repl.slynk_repl.play_events()
+        self.session = session
+        self.playing = False
+        self.play()
         self.value_phantom_groups = []
+        self.id = self.repl.slynk_repl.channel.id
+
         self.backtrack_phantom_set = PhantomSet(self._view, "backtracking")
-        self._view.settings().set("is_sly_repl", True)
+        self._view.settings().set("sly-session-id", session.id)
+        self._view.settings().set("is-sly-repl", True)
+        self._view.settings().set("sly-channel-id", self.id)
+
+        self.preserved_data = {}
+    def play(self):
+        self.playing = True
+        self.repl.slynk_repl.play_events()
+
+    def pause(self):
+        self.playing = False
+        self.repl.slynk_repl.pause_events()
 
     def update_view_loop(self):
         return True
@@ -138,22 +153,20 @@ async def create_main_repl(session):
     # Mostly copy and pasted from sublimeREPL.sublimerepl.ReplManager
     try:
         repl = await slynk.create_repl()
-        found = None
-        for view in window.views():
-            break  # I don't know what to do here so break
-            if view.id() == "something":
-                found = view
-                break
-        view = found or window.new_file()
+        view = window.new_file()
+        print(134124)
         try:
             rv = EventBasedReplView(
+                session,
                 view, 
                 ReplWrapper(repl), 
                 settings().get("repl")["syntax"], None)
         except Exception as e:
             self.window.status_message(f"REPL-spawning failure {str(e)}")
         #rv.call_on_close.append(self._delete_repl)
-        session.repl_views.append(rv)
+        print("hi")
+        session.repl_views[repl.channel.id] = rv
+        print("cont")
         sublimerepl.manager.repl_views[rv.repl.id] = rv
         view.set_scratch(True)
         affixes = settings().get("repl")["view_title_affixes"]
@@ -183,10 +196,16 @@ class ReplNewlineCommand(sublime_plugin.TextCommand):
         view.insert(edit, caret_point, "\n")
 
 
+def get_repl_view(view):
+    if (view.settings().get("is-sly-repl")
+        and (repl_view := sublimerepl.manager.repl_view(view))): 
+        return repl_view
+    return False
+
+
 class SlyReplListener(sublime_plugin.EventListener):
     def on_modified(self, view):
-        if not (view.settings().get("is_sly_repl")
-                and (repl_view := sublimerepl.manager.repl_view(view))): 
+        if not (repl_view := get_repl_view(view)): 
             return
         caret_point = view.sel()[0].begin()
         closest_match = util.find_closest(
@@ -226,3 +245,69 @@ class SlyReplListener(sublime_plugin.EventListener):
 
     def on_selection_modified(self, view):
         self.on_modified(view)
+
+    def on_pre_close(self, view):
+        if not (rv := get_repl_view(view)): 
+            return
+        rv.pause()
+        rv.preserved_data = {
+            "settings": list(view.settings()),
+            "contents": view.substr(Region(0, view.size()))
+        }
+
+def prepare_preview(repl_view: EventBasedReplView):
+    print("prep")
+    slynk = repl_view.session.slynk
+    lisp = slynk.connexion_info.lisp_implementation
+
+    try: port_info = slynk.host + ":" + slynk.port + " on " + slynk.connexion_info.machine.instance
+    except e: port_info = "??.??.??:????"
+
+    if repl_view.playing:
+        repl_info = "REPL currently open, select to switch."
+    else:
+        repl_info = "REPL frozen; select to switch. A small delay may occur."
+    return [
+        f"{lisp.name}❭{port_info} channel {repl_view.id}", 
+        repl_info]
+
+
+async def repl_choice(loop, window, session):
+    choice = await util.show_quick_panel(
+        loop,
+        window,
+        [prepare_preview(repl_view) for repl_view in session.repl_views.values()],
+        0,
+        0)
+    return list(session.repl_views.values())[choice] if choice != -1 else None
+
+
+class SlyOpenReplCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        session = sessions.get_by_window(self.window)
+        if session is None: return
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(session, **kwargs),
+            loop)
+        util.set_status(self.window.active_view(), session)
+
+    async def async_run(self, session, **kwargs):
+      try:
+        repl_view = await repl_choice(loop, self.window, session)
+        if repl_view is None: return
+        if not repl_view.playing:
+            view = self.window.new_file()
+            for key, value in repl_view.preserved_data["settings"]:
+                view.settings()[key] = value
+            repl_view._view = view
+            print("hiou")
+            print(repl_view.preserved_data["contents"])
+            view.run_command("repl_insert_text", 
+                {"pos": 0,
+                 "text": repl_view.preserved_data["contents"]})
+            repl_view.preserved_data = {}
+            repl_view.play()
+        self.window.focus_view(repl_view._view)
+        self.window.focus_window()
+      except Exception as e:
+        print(f"AU {e}")

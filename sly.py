@@ -33,7 +33,7 @@ class SlynkSession:
         super().__init__()
         self.slynk = slynk.SlynkClient(host, port)
         self.window = window
-        self.repl_views = []
+        self.repl_views = {}
         self.loop = loop
         self.slynk.bind(__aio_loop__=loop,
                         connect=self.on_connect,
