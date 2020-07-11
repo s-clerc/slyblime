@@ -154,7 +154,6 @@ async def create_main_repl(session):
     try:
         repl = await slynk.create_repl()
         view = window.new_file()
-        print(134124)
         try:
             rv = EventBasedReplView(
                 session,
@@ -164,9 +163,7 @@ async def create_main_repl(session):
         except Exception as e:
             self.window.status_message(f"REPL-spawning failure {str(e)}")
         #rv.call_on_close.append(self._delete_repl)
-        print("hi")
         session.repl_views[repl.channel.id] = rv
-        print("cont")
         sublimerepl.manager.repl_views[rv.repl.id] = rv
         view.set_scratch(True)
         affixes = settings().get("repl")["view_title_affixes"]
@@ -252,11 +249,12 @@ class SlyReplListener(sublime_plugin.EventListener):
         rv.pause()
         rv.preserved_data = {
             "settings": list(view.settings()),
-            "contents": view.substr(Region(0, view.size()))
+            "contents": view.substr(Region(0, view.size())),
+            "name": view.name(),
+            "scratch": view.is_scratch()
         }
 
 def prepare_preview(repl_view: EventBasedReplView):
-    print("prep")
     slynk = repl_view.session.slynk
     lisp = slynk.connexion_info.lisp_implementation
 
@@ -297,16 +295,19 @@ class SlyOpenReplCommand(sublime_plugin.WindowCommand):
         if repl_view is None: return
         if not repl_view.playing:
             view = self.window.new_file()
-            for key, value in repl_view.preserved_data["settings"]:
+            data = repl_view.preserved_data
+            for key, value in data["settings"]:
                 view.settings()[key] = value
-            repl_view._view = view
-            print("hiou")
-            print(repl_view.preserved_data["contents"])
+            view.set_name(data["name"])
+            view.set_scratch(data["scratch"])
             view.run_command("repl_insert_text", 
                 {"pos": 0,
-                 "text": repl_view.preserved_data["contents"]})
-            repl_view.preserved_data = {}
+                 "text": data["contents"]})
+            view.show_at_center(len(data["contents"])-1)
+            repl_view._view = view
             repl_view.play()
+            repl_view.preserved_data = {}
+        util.set_status(view, session)
         self.window.focus_view(repl_view._view)
         self.window.focus_window()
       except Exception as e:
