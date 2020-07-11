@@ -128,8 +128,7 @@ def show_notes_view(window, path, name, result):
         affixes = settings().get("compilation")["notes_view"]["header_affixes"]
         html = ('<html> <body id="sly-compilation-error-view">'
                 f'<h1>{escape(affixes[0] + str(name) + affixes[1])}</h1>')
-        index = 0
-        for note in result.notes:
+        for index, note in enumerate(result.notes):
             location = note.location
             path = escape(location["file"])
             position = escape(str(location["position"]))
@@ -137,12 +136,11 @@ def show_notes_view(window, path, name, result):
             html += (f'<h2>{severity}: {escape(note.message)} </h2>'
                      f'<blockquote> {escape(location["snippet"])} </blockquote><br>'
                      # We're using json.dumps because lazy
-                     f'<a href="{index}">{path} at {position}</a>')
-            index += 1
+                     f'<a href=\'subl:sly_compilation_error_url {{"index": {index}, "path": "{path}"}}\'>{path} at {position}</a>')
         html += "</body></html>"
         affixes = settings().get("compilation")["notes_view"]["view_title_affixes"]
         title = affixes[0] + name + affixes[1]
-        window.new_html_sheet(title, html, "sly_compilation_error_url", {"path": str(path)})
+        window.new_html_sheet(title, html)
 
     except Exception as e:
         window.status_message("Failed to open compilation notes view")
@@ -150,12 +148,12 @@ def show_notes_view(window, path, name, result):
 
 
 class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
-    def run(self, url=None, path=""):
+    def run(self, index=None, path=""):
         try:
             config = settings().get("compilation")["notes_view"]
 
             result = compilation_results[path]
-            location = result.notes[int(url)].location
+            location = result.notes[int(index)].location
             point = location["position"]
             path = location["file"]
             view = self.window.find_open_file(path)
@@ -164,7 +162,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
 
             view.show_at_center(point)
             snippet_region = find_snippet_region(view, location["snippet"], point)
-            highlight_region(
+            util.highlight_region(
                 view,
                 snippet_region,
                 settings().get("highlighting"),
