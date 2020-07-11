@@ -26,10 +26,6 @@
     "args": {"current": true}
   },
   {
-    "caption": "Sly: Create Inferior Lisp REPL",
-    "command": "create_repl"
-  },
-  {
     "caption": "Sly: Compile file",
     "command": "sly_compile_file"
   },

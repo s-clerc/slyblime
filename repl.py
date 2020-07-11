@@ -162,20 +162,20 @@ async def create_main_repl(session):
                 settings().get("repl")["syntax"], None)
         except Exception as e:
             self.window.status_message(f"REPL-spawning failure {str(e)}")
+            return
         #rv.call_on_close.append(self._delete_repl)
         session.repl_views[repl.channel.id] = rv
         sublimerepl.manager.repl_views[rv.repl.id] = rv
         view.set_scratch(True)
         affixes = settings().get("repl")["view_title_affixes"]
         view.set_name(affixes[0] + str(repl.channel.id) + affixes[1])
-        util.set_status(view, session)
         return rv
     except Exception as e:
         traceback.print_exc()
         sublime.error_message(repr(e))
 
 
-class CreateReplCommand(sublime_plugin.WindowCommand):
+class SlyCreateReplCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         global loop
         session = sessions.get_by_window(self.window)
@@ -264,21 +264,41 @@ def prepare_preview(repl_view: EventBasedReplView):
     if repl_view.playing:
         repl_info = "REPL currently open, select to switch."
     else:
-        repl_info = "REPL frozen; select to switch. A small delay may occur."
+        repl_info = "REPL frozen; select to thaw and switch. A small delay may occur."
     return [
         f"{lisp.name}❭{port_info} channel {repl_view.id}", 
         repl_info]
 
 
 async def repl_choice(loop, window, session):
+    choices = ([["Create new inferior Lisp REPL", "Avoid spamming REPLs please."]] 
+                 + [prepare_preview(repl_view) 
+                        for repl_view in session.repl_views.values()])
     choice = await util.show_quick_panel(
         loop,
         window,
-        [prepare_preview(repl_view) for repl_view in session.repl_views.values()],
+        choices,
         0,
-        0)
-    return list(session.repl_views.values())[choice] if choice != -1 else None
+        1)
+    if choice == 0:
+        return "new-repl"
+    return list(session.repl_views.values())[choice-1] if choice != -1 else None
 
+
+def thaw_repl(view, repl_view):
+    data = repl_view.preserved_data
+    for key, value in data["settings"]:
+        view.settings()[key] = value
+    view.set_name(data["name"])
+    view.set_scratch(data["scratch"])
+    view.run_command("repl_insert_text", 
+        {"pos": 0,
+         "text": data["contents"]})
+    view.show_at_center(len(data["contents"])-1)
+    repl_view._view = view
+    repl_view.play()
+    repl_view.preserved_data = {}
+    return view
 
 class SlyOpenReplCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
@@ -293,22 +313,15 @@ class SlyOpenReplCommand(sublime_plugin.WindowCommand):
       try:
         repl_view = await repl_choice(loop, self.window, session)
         if repl_view is None: return
-        if not repl_view.playing:
-            view = self.window.new_file()
-            data = repl_view.preserved_data
-            for key, value in data["settings"]:
-                view.settings()[key] = value
-            view.set_name(data["name"])
-            view.set_scratch(data["scratch"])
-            view.run_command("repl_insert_text", 
-                {"pos": 0,
-                 "text": data["contents"]})
-            view.show_at_center(len(data["contents"])-1)
-            repl_view._view = view
-            repl_view.play()
-            repl_view.preserved_data = {}
+        if repl_view == "new-repl":
+            repl_view = await create_main_repl(session)
+        elif not repl_view.playing:
+            thaw_repl(self.window.new_file(), repl_view)
+
+        view = repl_view._view
         util.set_status(view, session)
-        self.window.focus_view(repl_view._view)
+        self.window.focus_view(view)
         self.window.focus_window()
+
       except Exception as e:
-        print(f"AU {e}")
+        print(f"SlyOpenReplCommandException: {e}")
