@@ -3,7 +3,6 @@ import sublime_plugin, asyncio
 from .sly import *
 from . import util
 
-
 def prepare_preview(session):
     print("prep")
     slynk = session.slynk
@@ -23,18 +22,22 @@ def prepare_preview(session):
 
 async def session_choice(loop, window):
     try:
-        default_session = sessions.sessions.index(sessions.get_by_window(window, False, False))
-    except e:
-        default_session = 0
-    print("OEUA")
-    print([prepare_preview(session) for session in sessions.sessions])
+        default_session_index = 0 
+        default_session_id = sessions.get_by_window(window, False, False).id
+        for i, session in enumerate(sessions.list):
+            if session.id == default_session_id:
+                default_session_index = i
+                break
+    except Exception as e:
+        print(f"Exception while trying to establish default_session {e}")
+        default_session_index = 0
     choice = await util.show_quick_panel(
         loop,
         window,
-        [prepare_preview(session) for session in sessions.sessions],
+        [prepare_preview(session) for session in sessions.list],
         0,
-        default_session)
-    return choice if choice != -1 else None
+        default_session_index)
+    return sessions.list[choice].id if choice != -1 else None
 
 
 class SelectSessionCommand(sublime_plugin.WindowCommand):
@@ -47,7 +50,7 @@ class SelectSessionCommand(sublime_plugin.WindowCommand):
     async def async_run(self, **kwargs):
         choice = await session_choice(loop, self.window)
         if choice is None: return
-        sessions.set_by_window(self.window, sessions.sessions[choice])
+        sessions.set_by_window(self.window, sessions.list[choice])
 
 
 class CloseSessionCommand(sublime_plugin.WindowCommand):
