@@ -177,13 +177,16 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
 
 
 def show_notes_as_regions(window, path, result):
-    always_reopen = settings().get("compilation")["notes_view"]["always_reopen_file"]
-    regional_settings = settings().get("compilation")["notes_view"]["note_regions"]
+    config = settings().get("compilation")
+    always_reopen = config["notes_view"]["always_reopen_file"]
+    regional_settings = config["notes_view"]["note_regions"]
+    show_annotations = config["notes_view"]["annotations"]
     view = window.find_open_file(path)
     if view is None or always_reopen:
         view = self.window.open_file(path, sublime.TRANSIENT)
     print(result.notes)
     regions = []
+    annotations = []
     for note in result.notes:
         point = note.location["position"]
         snippet = note.location["snippet"]
@@ -196,11 +199,22 @@ def show_notes_as_regions(window, path, result):
         if region == None:
             region = Region(point, point)
         regions.append(region)
+        annotations.append(f"{note.severity[1:].capitalize()}: {note.message}")
     # Because compilation_results is dictionary which may accept tuples:
     compilation_results[(path, "regions")] = regions
-    view.add_regions("sly-compilation-notes", regions, regional_settings["highlight_scope"], "", DRAW_EMPTY)
     view.settings().set("path-for-sly-compilation-notes", path)
     view.settings().set("fresh-sly-compilation-notes", True)
+    data = {
+        "key":"sly-compilation-notes", 
+        "regions":regions, 
+        "scope":regional_settings["highlight_scope"], 
+        "icon":"", 
+        "flags":DRAW_EMPTY
+    }
+    if show_annotations:
+        data["annotations"] = annotations
+    view.add_regions(**data)
+
 
 class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
     def on_hover(self, view, point, zone):
