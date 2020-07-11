@@ -76,28 +76,25 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
 class SlyCompileFile(sublime_plugin.WindowCommand):
     def run(self, load=False):
         session = sessions.get_by_window(self.window)
-        if session is None: return
-        path = self.window.active_view().file_name()
-        if path is None:
-            self.window.status_message(
-                "File does not have path and cannot be compiled")
+        if session is None: 
             return
-        self.window.active_view().erase_regions("sly-compilation-notes")
+        path = self.window.active_view().file_name()
+        erase_notes(self.window.active_view())
         asyncio.run_coroutine_threadsafe(
             compile_file(self.window, session, path, basename(path), load),
             loop)
 
     def is_visible(self, **kwargs):
-        return util.in_lisp_file(self.window.active_view(), settings)
+        return (self.window.active_view().file_name() 
+               and util.in_lisp_file(self.window.active_view(), settings))
 
 
 async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
-    print(result)
     if type(result) != list:
         compilation_results[str(path)] = result
-        if not result.success:
-            try:
+        try:
+            if not result.success:
                 if load == True: 
                     window.status_message("Loading cancelled due to unsuccessful compilation")
                 elif load == False:
@@ -106,8 +103,10 @@ async def compile_file(window, session, path, name, load):
                     show_notes_as_regions(window, path, result)
                 else: 
                     show_notes_view(window, path, name, result)
-            except Exception as e:
-                print(f"fail {e}")
+            elif len(result.notes) and settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
+                show_notes_as_regions(window, path, result)
+        except Exception as e:
+            print(f"Compilation Error Unknown {e}")
 
 
 if "compilation_results" not in globals():
@@ -174,18 +173,21 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             print(f"SlyCompilationErrorUrlCommandException: {e}")
 
 
-def show_notes_as_regions(window, path, result):
+def show_notes_as_regions(window, path, result: slynk.structs.CompilationResult):
     config = settings().get("compilation")
     always_reopen = config["notes_view"]["always_reopen_file"]
     regional_settings = config["notes_view"]["note_regions"]
     show_annotations = config["notes_view"]["annotations"]
+    annotation_groups = config["annotation_groups"]
     view = window.find_open_file(path)
     if view is None or always_reopen:
         view = self.window.open_file(path, sublime.TRANSIENT)
-    print(result.notes)
+    groups: List[Tuple[List[Regions], List[str]]] = []
+    for i in range(0, len(annotation_groups)):
+        groups.append(([], [])) # Create new tuples for each
     regions = []
-    annotations = []
-    for note in result.notes:
+    are_visible = []
+    for i, note in enumerate(result.notes):
         point = note.location["position"]
         snippet = note.location["snippet"]
         # Not a raw string intentionally VVVV
@@ -196,45 +198,62 @@ def show_notes_as_regions(window, path, result):
         region = find_snippet_region(view, snippet, point)
         if region == None:
             region = Region(point, point)
+        joined_string = "\u001E".join([
+            str(note.severity), str(note.message), str(note.source_context),
+            str(note.location), str(note.references)])
         regions.append(region)
-        annotations.append(f"{note.severity[1:].capitalize()}: {note.message}")
+        are_visible.append(False)
+        for j, group in enumerate(annotation_groups):
+            prefix = group['prefix'] if "prefix" in group else ""
+            if re.match(group["matches"], joined_string):
+                groups[j][0].append(region)
+                groups[j][1].append(f"{prefix}{note.severity[1:].capitalize()}: {note.message}")  
+                are_visible[i] = True
+                break          
     # Because compilation_results is dictionary which may accept tuples:
-    compilation_results[(path, "regions")] = regions
+    compilation_results[(path, "regions")] = (regions, are_visible)
     view.settings().set("path-for-sly-compilation-notes", path)
-    view.settings().set("fresh-sly-compilation-notes", True)
-    data = {
-        "key":"sly-compilation-notes", 
-        "regions":regions, 
-        "scope":regional_settings["highlight_scope"], 
-        "icon":"", 
-        "flags":DRAW_EMPTY
-    }
-    if show_annotations:
-        data["annotations"] = annotations
-    view.add_regions(**data)
+    view.settings().set("sly-visible-compilation-notes", sum([1 if el else 0 for el in are_visible]))
+    view.settings().set("number-sly-compilation-notes", len(annotation_groups))
+    for i, (regions, annotations) in enumerate(groups):
+        info = annotation_groups[i]
+        scope = info["highlight_scope"] if "highlight_scope" in info else regional_settings["highlight_scope"]
+        data = {
+            "key":f"sly-compilation-notes-{i}", 
+            "regions":regions, 
+            "scope": scope, 
+            "icon": info["icon"] if "icon" in info else "", 
+            "flags": DRAW_EMPTY
+        }
+        if show_annotations:
+            data["annotations"] = annotations
+        if "annotation_color" in info:
+            data["annotation_color"] = info["annotation_color"]
+        view.add_regions(**data)
 
 
 class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
     def on_hover(self, view, point, zone):
-        if not all([zone == HOVER_TEXT,
-                    is_fresh := view.settings().get("fresh-sly-compilation-notes"),
+        config = settings().get("compilation")["notes_view"]["note_regions"]
+        visible = view.settings().get("sly-visible-compilation-notes")
+        if not all([config["enable_hover"],
+                    zone == HOVER_TEXT,
+                    visible and visible > 0,
                     path := view.settings().get("path-for-sly-compilation-notes")]): 
             return
 
-        dimensions = settings().get("compilation")["notes_view"]["note_regions"]["dimensions"]
+        dimensions = config["dimensions"]
         result = compilation_results[path]
-        regions = compilation_results[(path, "regions")]
+        regions, are_visible = compilation_results[(path, "regions")]
 
         # Linear search since the regions are unsorted :()
         hover_region_size = 100000
         hover_region_index = -1
-        index = 0
-        for region in regions:
-            if (region.contains(point) 
+        for i, region in enumerate(regions):
+            if (are_visible[i] and region.contains(point) 
                 and (hover_region_index == -1 or region.size() < hover_region_size)):
                 hover_region_size = region.size()
-                hover_region_index = index
-            index += 1
+                hover_region_index = i
         if hover_region_index < 0: return
 
         note = result.notes[hover_region_index]
@@ -272,15 +291,20 @@ class SlyLoadFileCommand(sublime_plugin.WindowCommand):
 
 class SlyRemoveNoteHighlighting(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
-        session = sessions.get_by_window(self.window)
-        if session is None: return
-        view = self.window.active_view()
-        view.erase_regions("sly-compilation-notes")
-        view.settings().set("fresh-sly-compilation-notes", False)
+        erase_notes(self.window.active_view())
 
     def is_visible(self, **kwargs):
-        return len(self.window.active_view().get_regions("sly-compilation-notes")) > 0
+        visible = self.window.active_view().settings().get("sly-visible-compilation-notes")
+        return (visible and visible > 0) == True
 
+def erase_notes(view):
+    settings = view.settings()
+    visible = visible = settings.get("sly-visible-compilation-notes")
+    if not (visible and visible > 0):
+        return
+    for i in range(0, settings.get("number-sly-compilation-notes")):
+        view.erase_regions(f"sly-compilation-notes-{i}")
+    settings.set("sly-visible-compilation-notes", 0)
 
 
 
