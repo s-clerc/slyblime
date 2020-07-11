@@ -104,6 +104,7 @@
       "always_reopen_file": false,
       "snippet_location_adjust": -2,
       "prefer_integrated_notes": true,
+      "annotations": true,
       "note_regions": {
         "highlight_scope": "region.redish",
         "dimensions": [1000, 1000],
