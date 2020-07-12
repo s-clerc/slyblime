@@ -40,7 +40,7 @@ def compile_region(view, window, session, region):
         session.slynk.compile_string(**parameters),
         loop)
 
-class SlyCompileSelection(sublime_plugin.TextCommand):
+class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
     def run(self, edit, **kwargs):
         global loop
         view = self.view
@@ -53,7 +53,7 @@ class SlyCompileSelection(sublime_plugin.TextCommand):
             compile_region(view, window, session, selection)
 
 
-class SlyCompileTopLevel(sublime_plugin.TextCommand):
+class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
     def run(self, edit, **kwargs):
         global loop
         view = self.view
@@ -73,8 +73,10 @@ class SlyCompileTopLevel(sublime_plugin.TextCommand):
         else:
             window.status_message("Failed to find nearby top-level form.")
 
-class SlyCompileFile(sublime_plugin.WindowCommand):
-    def run(self, load=False):
+class SlyCompileFileCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        load = kwargs.get("load", False)
+        print("hello")
         session = sessions.get_by_window(self.window)
         if session is None: 
             return
@@ -106,6 +108,7 @@ async def compile_file(window, session, path, name, load):
             elif len(result.notes) and settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
                 show_notes_as_regions(window, path, result)
         except Exception as e:
+            print(result)
             print(f"Compilation Error Unknown {e}")
 
 
