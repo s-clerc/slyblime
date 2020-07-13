@@ -28,17 +28,6 @@
         }
     },
     {
-        "caption": "Sly: Compile file",
-        "command": "sly_compile_file"
-    },
-    {
-        "caption": "Sly: Compile and load file ",
-        "command": "sly_compile_file",
-        "args": {
-            "load": true
-        }
-    },
-    {
         "caption": "Sly: Compilation notes for the current file",
         "command": "sly_show_notes_view"
     },
@@ -91,6 +80,13 @@
     {
         "caption": "Sly: Evaluate contents of view",
         "command": "sly_eval_region",
+        "args": {
+            "input": "buffer"
+        }
+    },
+        {
+        "caption": "Sly: Expand contents of view",
+        "command": "sly_expand",
         "args": {
             "input": "buffer"
         }

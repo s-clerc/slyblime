@@ -103,11 +103,6 @@ class SlyCompileFileCommand(sublime_plugin.WindowCommand):
             compile_file(self.window, session, path, basename(path), load),
             loop)
 
-    def is_visible(self, **kwargs):
-        return (self.window.active_view().file_name() 
-               and util.in_lisp_file(self.window.active_view(), settings))
-
-
 async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
     if type(result) != list:
