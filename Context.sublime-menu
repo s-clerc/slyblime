@@ -7,6 +7,17 @@
         "caption": "Compile Selection",
         "command": "sly_compile_selection"
       },
+      {
+        "caption": "Evaluate (first) selection",
+        "command": "sly_eval_region"
+      },
+      {
+        "caption": "Evaluate toplevel at cursor",
+        "command": "sly_eval_region",
+        "args": {
+          "input": "toplevel"
+        }
+      },
     ]
   }
 ]

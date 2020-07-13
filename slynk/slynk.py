@@ -330,10 +330,12 @@ class SlynkClient(Dispatcher):
         return [Completion(*completion[:-1], completion[3].split(","))
                 for completion in response[0]]
 
-    async def eval(self, expression_string, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        command = f"SLYNK-REPL:LISTENER-EVAL {dumps(expression_string)}"
-        result = await self.rex(command, ":REPL-THREAD", package)
+    async def eval(self, expression_string, is_region, *args):
+        package = (args[0] if len(args) > 0 and args[0] is not None 
+                           else "COMMON-LISP-USER")
+        mode = "-REGION" if is_region else ""
+        command = f"SLYNK:INTERACTIVE-EVAL{mode} {dumps(expression_string)}"
+        result = await self.rex(command, "T", package)
         return result
 
     ### Debugging stuff

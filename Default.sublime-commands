@@ -79,5 +79,16 @@
     {
         "caption": "Sly: Open an inferior Lisp REPL",
         "command": "sly_open_repl"
+    },
+    {
+        "caption": "Sly: Interactive evaluation",
+        "command": "sly_eval"
+    },
+    {
+        "caption": "Sly: Evaluate contents of view",
+        "command": "sly_eval_region",
+        "args": {
+            "input": "buffer"
+        }
     }
 ]
