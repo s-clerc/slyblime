@@ -41,29 +41,43 @@ def compile_region(view, window, session, region):
         loop)
 
 class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
-    def run(self, edit, **kwargs):
+    def run(self, edit, event=None, **kwargs):
         global loop
         view = self.view
         window = view.window()
         session = sessions.get_by_window(window)
         if session is None: return
+        
+        if event:
+            selections = [
+                util.nearest_region_to_point(
+                    util.event_to_point(view, event), 
+                    view.sel())]
+            if selections[0] is None:
+                view.window().status_message("No selection found")
+                return
+        else:
+            selections = view.sel()
 
-        selections = view.sel()
         for selection in selections:
             compile_region(view, window, session, selection)
 
+    def want_event(self):
+        return True
 
 class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
-    def run(self, edit, **kwargs):
+    def run(self, edit, event=None, **kwargs):
         global loop
         view = self.view
         window = view.window()
         session = sessions.get_by_window(window)
         if session is None: return
+        if event:
+            point = util.event_to_point(view, event)
         try:
             region = util.find_toplevel_form(
                 self.view, 
-                None, # Default start poirnt
+                point if event else None, # Default start poirnt
                 settings().get("compilation")['max_search_iterations'])
         except RuntimeWarning:
             window.status_message("Failed to find top-level form within alloted search time")
@@ -72,6 +86,9 @@ class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
             compile_region(view, window, session, region)
         else:
             window.status_message("Failed to find nearby top-level form.")
+
+    def want_event(self):
+        return True
 
 class SlyCompileFileCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):

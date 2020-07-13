@@ -50,6 +50,10 @@
         }
     },
     {
+        "caption": "Sly: Compile all selections",
+        "command": "sly_compile_selection"
+    },
+    {
         "caption": "Sly: Load file if compiled",
         "command": "sly_load_file"
     },

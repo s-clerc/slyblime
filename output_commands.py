@@ -2,7 +2,6 @@ from sublime import *
 import sublime_plugin, asyncio
 from .sly import *
 from . import util
-from math import inf
 
 class SlyEvalRegionCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
@@ -15,18 +14,12 @@ class SlyEvalRegionCommand(sublime_plugin.TextCommand):
         view = self.view
         region = view.sel()[0]
         if event and input != "buffer":
-            point = view.window_to_text((event["x"], event["y"]))
-            print(point)
-            minimal_distance = inf
+            point = util.event_to_point(view, event)
             if input == "selection":
-                for i, selection in enumerate(view.sel()):
-                    distance = min(
-                        abs(region.begin()-point), 
-                        abs(region.end()-point))
-                    if  distance < minimal_distance:
-                        region = selection
-                        if region.contains(point):
-                            break
+                region = util.nearest_region_to_point(point, view.sel())
+                if region is None:
+                    view.window().status_message("No selection found")
+                    return
             else:
                 region = Region(point, point)
 

@@ -1,6 +1,7 @@
 import asyncio
 from bisect import bisect_left
 import re
+from math import inf
 
 # Needed because we shadow one thing from the default ST stuff
 import sublime
@@ -177,7 +178,7 @@ def determine_depth(scopes):
             depth += 1
     return depth
 
-def find_toplevel_form(view, point: int=None, max_iterations=100) -> Tuple[Region, int]: 
+def find_toplevel_form(view, point: int=None, max_iterations=100) -> Region: 
     point = point or view.sel()[0].begin()
     region = view.extract_scope(point)
     # It only has the scope of the file, so its outside
@@ -228,3 +229,21 @@ def find_toplevel_form(view, point: int=None, max_iterations=100) -> Tuple[Regio
     else:
         return None
 
+
+def event_to_point(view, event: Dict[str, int]) -> Tuple[int]:
+    return view.window_to_text((event["x"], event["y"]))
+
+
+def nearest_region_to_point (point: int, regions: Iterable[Region]) -> Optional[Region]:
+    if len(regions) == 0:
+        return None
+    minimal_distance = inf
+    for region in regions:
+        distance = min(
+            abs(region.begin() - point), 
+            abs(region.end() - point))
+        if distance < minimal_distance:
+            result = region
+            if result.contains(point):
+                break
+    return result

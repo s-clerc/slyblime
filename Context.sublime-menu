@@ -4,11 +4,15 @@
     "id": "Sly",
     "children": [
       {
-        "caption": "Compile Selection (first)",
+        "caption": "Compile selection nearest to cursor",
         "command": "sly_compile_selection"
       },
       {
-        "caption": "Evaluate selection (nearest to cursor)",
+        "caption": "Compile top-level at cursor",
+        "command": "sly_compile_top_level"
+      },
+      {
+        "caption": "Evaluate selection nearest to cursor",
         "command": "sly_eval_region"
       },
       {
