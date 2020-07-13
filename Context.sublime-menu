@@ -4,11 +4,11 @@
     "id": "Sly",
     "children": [
       {
-        "caption": "Compile Selection",
+        "caption": "Compile Selection (first)",
         "command": "sly_compile_selection"
       },
       {
-        "caption": "Evaluate (first) selection",
+        "caption": "Evaluate selection (nearest to cursor)",
         "command": "sly_eval_region"
       },
       {
