@@ -6,6 +6,9 @@
   },
   "debug": true,
   "repl": {
+    "settings_not_to_copy": [
+      "color_scheme"
+    ],
     "prompt": "⟩ ",
     "error": [" ｢", "｣"],
     "syntax": "Packages/Lisp/Lisp.tmLanguage",
