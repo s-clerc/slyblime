@@ -2,16 +2,33 @@ from sublime import *
 import sublime_plugin, asyncio
 from .sly import *
 from . import util
+from math import inf
 
-class SlyEvalRegionCommand(sublime_plugin.WindowCommand):
+class SlyEvalRegionCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
         asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
 
-    async def async_run(self, *args, input="selection"):
-        session = sessions.get_by_window(self.window)
+    async def async_run(self, *args, input="selection", event=None):
+        session = sessions.get_by_window(self.view.window())
         if session is None: return
-        view = self.window.active_view()
+        print("hi")
+        view = self.view
         region = view.sel()[0]
+        if event and input != "buffer":
+            point = view.window_to_text((event["x"], event["y"]))
+            print(point)
+            minimal_distance = inf
+            if input == "selection":
+                for i, selection in enumerate(view.sel()):
+                    distance = min(
+                        abs(region.begin()-point), 
+                        abs(region.end()-point))
+                    if  distance < minimal_distance:
+                        region = selection
+                        if region.contains(point):
+                            break
+            else:
+                region = Region(point, point)
 
         if "toplevel" in input:
             region = util.find_toplevel_form(view, region.begin())
@@ -33,14 +50,16 @@ class SlyEvalRegionCommand(sublime_plugin.WindowCommand):
             True, 
             package)
 
-        self.window.status_message(result if result else "An error occured during interactive evaluation")
+        view.window().status_message(result if result else "An error occured during interactive evaluation")
+
+    def want_event(self):
+        return True
 
 class SlyEvalCommand(sublime_plugin.WindowCommand):
     def run (self, *args, **kwargs):
         asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
 
     async def async_run(self, *args, **kwargs):
-      try:
         session = sessions.get_by_window(self.window)
         if session is None: return
         view = self.window.active_view()
@@ -56,7 +75,4 @@ class SlyEvalCommand(sublime_plugin.WindowCommand):
             evaluee, 
             False, 
             package)
-
         self.window.status_message(f"⇒ {result}" if result else "An error occured during interactive evaluation")
-      except Exception as e:
-        print(f"Int eval error: {e}")
