@@ -288,6 +288,8 @@ async def repl_choice(loop, window, session):
 def thaw_repl(view, repl_view):
     data = repl_view.preserved_data
     for key, value in data["settings"]:
+        if key in settings()["repl"]["settings_not_to_copy"]: 
+            continue # Exceptions
         view.settings()[key] = value
     view.set_name(data["name"])
     view.set_scratch(data["scratch"])
