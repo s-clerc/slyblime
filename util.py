@@ -167,6 +167,8 @@ def in_lisp_file(view, settings: Callable):
     return len(matches) > 0
 
 
+SCOPE_REGEX = re.compile(r"(meta.(parens|section))")
+
 def get_scopes(view, point):
     return view.scope_name(point).strip().split(" ")
     
@@ -174,11 +176,11 @@ def determine_depth(scopes):
     depth = 0
     for scope in scopes:
         # TODO: replace with customisable regex
-        if ("meta.parens" or "meta.section") in scope:
+        if SCOPE_REGEX.match(scope):
             depth += 1
     return depth
 
-def find_toplevel_form(view, point: int=None, max_iterations=100) -> Region: 
+def find_form_region(view, point: int=None, desired_depth=1, max_iterations=100) -> Region: 
     point = point or view.sel()[0].begin()
     region = view.extract_scope(point)
     # It only has the scope of the file, so its outside
@@ -202,11 +204,16 @@ def find_toplevel_form(view, point: int=None, max_iterations=100) -> Region:
     point: int = region.begin()
     scopes: str = get_scopes(view, point)
     depth: int = determine_depth(scopes)
+    if desired_depth == None: # Select the current depth
+        desired_depth = depth
     previous_region = Region(-1, -1)
     iterations = 0
     forward = True
-    while ((depth > 1 or len(scopes) > 2) 
-            and iterations < max_iterations):
+    def should_continue():
+        return ((depth > desired_depth 
+                      or (desired_depth == 1 and len(scopes) > 2)) 
+                and iterations < max_iterations)
+    while should_continue():
         if previous_region != region:
             point = region.begin() if forward else region.end()
         else:
@@ -222,17 +229,17 @@ def find_toplevel_form(view, point: int=None, max_iterations=100) -> Region:
         # a scope where the extract_scope is the top-level form
         if len(scopes) == 3 and "begin" in scopes[2]:
             forward = False
-    if depth == 1:
+    if depth == desired_depth:
         return region
     elif iterations >= max_iterations:
         raise RuntimeWarning("Search iterations exceeded")
     else:
+        print(depth, desired_depth)
         return None
 
 
 def event_to_point(view, event: Dict[str, int]) -> Tuple[int]:
     return view.window_to_text((event["x"], event["y"]))
-
 
 def nearest_region_to_point (point: int, regions: Iterable[Region]) -> Optional[Region]:
     if len(regions) == 0:
