@@ -612,7 +612,9 @@ class SlynkClient(Dispatcher):
         result = await self.rex(f"SLYNK:LOAD-FILE {dumps(file_name)}", "T", *args)
         return result
 
-    async def expand(self, form, package=DEFAULT_PACKAGE, recursively=True, macros=True, compiler_macros=True):
+    async def expand(self, form, package=DEFAULT_PACKAGE, name=False, recursively=True, macros=True, compiler_macros=True):
+      try:
+        print("hello")
         if macros and compiler_macros:
             function_name = "EXPAND"
         elif macros:
@@ -620,6 +622,7 @@ class SlynkClient(Dispatcher):
         elif compiler_macros:
             function_name = "COMPILER-MACROEXPAND"
         else:
+            function_name = "nothing"
             print(f"Trivial macroëxpanding being used for {form}")
             return form
 
@@ -631,8 +634,12 @@ class SlynkClient(Dispatcher):
         elif not recursively:
             function_name += "-1"
 
-        result = self.rex(f"SLYNK:SLYNK-{function_name} {dumps(form)}", "T", package)
+        result = await self.rex(f"SLYNK:SLYNK-{function_name} {dumps(form)}", "T", package)
+        if name:
+            return result, function_name
         return result
+      except Exception as e:
+        print(f"aoeu {e}")
 
     async def parse_inspection(self, result, *args):
         if not result:
@@ -792,6 +799,10 @@ async def mainA(x, y, actions):
         d = await x.documentation_symbol("print")
         print(d)
         print(await x.autodoc("(print 12)", 5))
+    if "mp":
+        print("hi")
+        print(await x.expand("(loop for x from 1 to 5 do (print x))"))
+        print(await x.expand("(loop for x from 1 to 5 do (print x))"))
     while (evaluee := input("a>>")) != "quit":
         eval(evaluee, globals(), locals())
     x.disconnect()
@@ -810,4 +821,4 @@ def main(actions):
 
 
 if __name__ == '__main__':
-    main(["repl", "docs"])
+    main(["mp"])
