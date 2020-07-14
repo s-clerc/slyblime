@@ -79,16 +79,18 @@
     },
     {
         "caption": "Sly: Evaluate contents of view",
-        "command": "sly_eval_region",
+        "command": "sly_output",
         "args": {
-            "input": "buffer"
+            "input": "buffer",
+            "mode": "eval"
         }
     },
         {
         "caption": "Sly: Expand contents of view",
-        "command": "sly_expand",
+        "command": "sly_output",
         "args": {
-            "input": "buffer"
+            "input": "buffer",
+            "mode": "eval"
         }
     }
 ]

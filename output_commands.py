@@ -1,52 +1,129 @@
 from sublime import *
-import sublime_plugin, asyncio
+import sublime_plugin, asyncio, math
 from .sly import *
 from . import util
+
+
+def get_results_view(window):
+    view = None
+    for maybe_view in window.views():
+        if maybe_view.name() == "Sly Output":
+            view = maybe_view
+            break
+    if view and view.settings().get("is-sly-output-view"):
+        return view
+    session = sessions.get_by_window(self.view.window())
+    if session is None: 
+        print("Error session should exist but doesn't 1")
+        raise Exception("Session should exist but doesn't 1")
+    view = window.new_file()
+    view.set_name("Sly Output")
+    view.set_scratch(True)
+    view.set_read_only(True)
+    view.settings().set("is-sly-output-view", True)
+    return view
+"""
+  This function determines what the input should be.
+  It takes into account cursor position for commands run 
+  from the context menu and the argument to the input command.
+
+  Basically if you use the command contextually it'll choose
+  the toplevel the mouse is hovering over, or the closest region to it.
+
+  Otherwise, it uses the closest to the caret
+"""
+def determine_input(view, input, event):
+    region = view.sel()[0]
+    if event and input != "buffer":
+        point = util.event_to_point(view, event)
+        if input == "selection":
+            region = util.nearest_region_to_point(point, view.sel())
+            if region is None:
+                view.window().status_message("No selection found")
+                return None, None
+        else:
+            region = Region(point, point)
+
+    if "toplevel" in input:
+        region = util.find_form_region(view, region.begin())
+    elif "buffer" in input:
+        region = Region(0, view.size() - 1)
+
+    # No highlighting for buffer evaluation
+    if input in ["toplevel", "selection"]:
+        highlighting = settings().get("highlighting")
+        package, package_region = util.current_package(view, region.begin(), True)
+        util.highlight_region(view, region, highlighting, None, highlighting["form_scope"])
+        if package:
+            util.highlight_region(view, package_region, highlighting, None, highlighting["package_scope"])
+    else:
+        package = None
+    return view.substr(region), package
+
+
+def number_lines(text, prefix=""):
+    width = math.ceil(math.log(len(lines := text.split("\n"))))
+    return "\n".join([f"{prefix}{str(n).rjust(width, ' ')} {line}" 
+                                   for n, line in enumerate(lines)])
+
+class SlyExpandCommand(sublime_plugin.TextCommand):
+    def run (self, *args, **kwargs):
+        asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
+
+    async def async_run(self, *args, input="selection", output="panel", event=None, **kwargs):
+        session = sessions.get_by_window(self.view.window())
+        if session is None: return
+        print("OK")
+        try:
+            text, package = determine_input(self.view, input, event)
+            print(text)
+            if text is None:
+                return
+            print("now start")
+            print(kwargs)
+            result, name = await session.slynk.expand(
+                text, 
+                package,
+                True,
+                **kwargs)
+            out = (f"Expansion (`{name}`) of\n"
+                    +  number_lines(text, " ")
+                    + f"\n\nfrom: {self.view.file_name()} is\n\n"
+                    +  number_lines(result, " ") + "\n\n") 
+            view = get_results_view(self.view.window())
+            view.run_command("repl_insert_text",
+                {"pos":view.size(),
+                 "text": out})
+            view.window().focus_view(view)
+        except Exception as e:
+            window.status_message(f"An error occured: {e}")
+            print(f"SlyExpandCommandException: {e}")     
+    def want_event(self):
+        return True
+
 
 class SlyEvalRegionCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
         asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
 
-    async def async_run(self, *args, input="selection", event=None):
+    async def async_run(self, *args, mode="eval", input="selection", output="status_message", event=None, **kwargs):
         session = sessions.get_by_window(self.view.window())
         if session is None: return
-        print("hi")
-        view = self.view
-        region = view.sel()[0]
-        if event and input != "buffer":
-            point = util.event_to_point(view, event)
-            if input == "selection":
-                region = util.nearest_region_to_point(point, view.sel())
-                if region is None:
-                    view.window().status_message("No selection found")
-                    return
-            else:
-                region = Region(point, point)
-
-        if "toplevel" in input:
-            region = util.find_toplevel_form(view, region.begin())
-        elif "buffer" in input:
-            region = Region(0, view.size() - 1)
-
-        # No highlighting for buffer evaluation
-        if input in ["toplevel", "selection"]:
-            highlighting = settings().get("highlighting")
-            package, package_region = util.current_package(view, region.begin(), True)
-            util.highlight_region(view, region, highlighting, None, highlighting["form_scope"])
-            if package:
-                util.highlight_region(view, package_region, highlighting, None, highlighting["package_scope"])
-        else:
-            package = None
-
+        text, package = determine_input(self.view, input, event)
+        if text is None:
+            return
         result = await session.slynk.eval(
-            view.substr(region), 
+            text, 
             True, 
             package)
-
-        view.window().status_message(result if result else "An error occured during interactive evaluation")
+        if output == "status_message":
+            view.window().status_message(
+                result if result 
+                       else f"An error occured during interactive evaluation")
 
     def want_event(self):
         return True
+
 
 class SlyEvalCommand(sublime_plugin.WindowCommand):
     def run (self, *args, **kwargs):

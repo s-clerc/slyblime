@@ -22,6 +22,21 @@
           "input": "toplevel"
         }
       },
+      {
+        "caption": "Expand-1 selection nearest to cursor",
+        "command": "sly_expand",
+        "args": {
+          "recursively": false,
+        }
+      },
+      {
+        "caption": "Expand-1 toplevel at cursor",
+        "command": "sly_expand",
+        "args": {
+          "input": "toplevel",
+          "recursively": false,
+        }
+      },
     ]
   }
 ]
