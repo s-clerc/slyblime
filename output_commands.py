@@ -22,6 +22,26 @@ def get_results_view(window):
     view.set_read_only(True)
     view.settings().set("is-sly-output-view", True)
     return view
+
+def send_result_to_panel(window, text, result, header, file_name):
+    view = get_results_view(window)
+    out = [header + "\n",
+           number_lines(text, " "),
+           f"\nfrom: {file_name} is\n",
+           number_lines(result, " "),
+           "\n\n"]
+    # We store the position just before the result so
+    # we can navigate the user there as that's what they actually care about
+    # we also fold the region of the original text
+    origin = view.size()
+    region = Region(origin+len(out[0]), origin+len(out[0])+len(out[1]))
+    out = "".join(out)
+    view.run_command("repl_insert_text",
+        {"pos": view.size(),
+         "text": out})
+    window.focus_view(view)
+    view.fold(region)
+    view.show(Region(origin, origin+len(out)))    
 """
   This function determines what the input should be.
   It takes into account cursor position for commands run 
@@ -61,10 +81,12 @@ def determine_input(view, input, event):
     return view.substr(region), package
 
 
-def number_lines(text, prefix=""):
+def number_lines(text, prefix="", suffix=" "):
     width = math.ceil(math.log(len(lines := text.split("\n"))))
-    return "\n".join([f"{prefix}{str(n).rjust(width, ' ')} {line}" 
-                                   for n, line in enumerate(lines)])
+    offset = settings().get("line_offset")
+    return "\n".join([prefix + str(n+offset).rjust(width, ' ') + suffix + line 
+                      for n, line in enumerate(lines)])
+
 
 class SlyExpandCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
@@ -86,15 +108,12 @@ class SlyExpandCommand(sublime_plugin.TextCommand):
                 package,
                 True,
                 **kwargs)
-            out = (f"Expansion (`{name}`) of\n"
-                    +  number_lines(text, " ")
-                    + f"\n\nfrom: {self.view.file_name()} is\n\n"
-                    +  number_lines(result, " ") + "\n\n") 
-            view = get_results_view(self.view.window())
-            view.run_command("repl_insert_text",
-                {"pos":view.size(),
-                 "text": out})
-            view.window().focus_view(view)
+            send_result_to_panel(
+                self.view.window(),
+                text,
+                result,
+                f"Expansion (`{name}` in `{package or 'CL-USER'}`) of",
+                self.view.file_name())
         except Exception as e:
             window.status_message(f"An error occured: {e}")
             print(f"SlyExpandCommandException: {e}")     
@@ -120,7 +139,13 @@ class SlyEvalRegionCommand(sublime_plugin.TextCommand):
             view.window().status_message(
                 result if result 
                        else f"An error occured during interactive evaluation")
-
+        elif output == "panel":
+            send_result_to_panel(
+                self.view.window(),
+                text,
+                result,
+                f"Interactive evaluation (in `{package or 'CL-USER'}`) of",
+                self.view.file_name())
     def want_event(self):
         return True
 
