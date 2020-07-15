@@ -10,6 +10,9 @@ except ValueError: # Importing for normal python
 
 from .structs import *
 
+# So that all the mixins can access it.
+DEFAULT_PACKAGE = "COMMON-LISP-USER"
+
 class Channel(Dispatcher):
     _events_ = ["message_recieved"]
     def __init__(self, slynk, id):
