@@ -23,11 +23,11 @@ def get_results_view(window):
     view.settings().set("is-sly-output-view", True)
     return view
 
-def send_result_to_panel(window, text, result, header, file_name):
+def send_result_to_panel(window, text=None, result="[No result]", header="[Command_header]", file_name=None, should_fold=True):
     view = get_results_view(window)
     out = [header + "\n",
-           number_lines(text, " "),
-           f"\nfrom: {file_name} is\n",
+           number_lines(text, " ") if text else "",
+           f"\nfrom: {file_name} is:\n" if file_name else "\n is:\n",
            number_lines(result, " "),
            "\n\n"]
     # We store the position just before the result so
@@ -41,7 +41,8 @@ def send_result_to_panel(window, text, result, header, file_name):
          "text": out})
     window.focus_view(view)
     view.fold(region)
-    view.show(Region(origin, origin+len(out)))    
+    if text and should_fold:
+        view.show(Region(origin, origin+len(out)))    
 """
   This function determines what the input should be.
   It takes into account cursor position for commands run 
@@ -92,12 +93,12 @@ class SlyExpandCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
         asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
 
-    async def async_run(self, *args, input="selection", output="panel", event=None, **kwargs):
+    async def async_run(self, *args, input_source="selection", output="panel", event=None, **kwargs):
         session = sessions.get_by_window(self.view.window())
         if session is None: return
         print("OK")
         try:
-            text, package = determine_input(self.view, input, event)
+            text, package = determine_input(self.view, input_source, event)
             print(text)
             if text is None:
                 return
@@ -125,10 +126,10 @@ class SlyEvalRegionCommand(sublime_plugin.TextCommand):
     def run (self, *args, **kwargs):
         asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
 
-    async def async_run(self, *args, mode="eval", input="selection", output="status_message", event=None, **kwargs):
+    async def async_run(self, *args, mode="eval", input_source="selection", output="status_message", event=None, **kwargs):
         session = sessions.get_by_window(self.view.window())
         if session is None: return
-        text, package = determine_input(self.view, input, event)
+        text, package = determine_input(self.view, input_source, event)
         if text is None:
             return
         result = await session.slynk.eval(
@@ -171,3 +172,30 @@ class SlyEvalCommand(sublime_plugin.WindowCommand):
             False, 
             package)
         self.window.status_message(f"⇒ {result}" if result else "An error occured during interactive evaluation")
+
+
+class SlyDescribeCommand(sublime_plugin.TextCommand):
+    def run (self, *args, **kwargs):
+        asyncio.run_coroutine_threadsafe(self.async_run(*args, **kwargs), loop)
+
+    async def async_run(self, *args, mode="symbol", input_source="ask", output="panel", **kwargs):
+      try:
+        session = sessions.get_by_window(self.view.window())
+        if session is None: return 
+        print("hello")
+        if input_source == "ask":
+            query = await util.show_input_panel(
+                loop, 
+                self.view.window(), 
+                f"Describe:", 
+                "")
+        elif input_source == "given":
+            query = kwargs["query"]
+        result = await session.slynk.describe(query, mode)
+        print(result)
+        send_result_to_panel(
+            window=self.view.window(), 
+            result=result, 
+            header=f"Description ({mode}) for {query}")
+      except Exception as e:
+        print(e)
