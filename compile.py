@@ -16,7 +16,8 @@ from .sly import *
 from . import slynk, util, sexpdata
 
 
-def compile_region(view, window, session, region):
+async def compile_region(view, window, session, region):
+    print("hi")
     if region.size() == 0: return
     config = settings().get("compilation")
     highlighting = settings().get("highlighting")
@@ -35,14 +36,17 @@ def compile_region(view, window, session, region):
     if package_info[0]: 
         parameters["package"] = package_info[0]
         util.highlight_region(view, package_info[1], highlighting, None, highlighting["package_scope"])
-
-    asyncio.run_coroutine_threadsafe(
-        session.slynk.compile_string(**parameters),
-        loop)
+    print("OK")
+    result = await session.slynk.compile_string(**parameters),
+    return result
 
 class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
-    def run(self, edit, event=None, **kwargs):
-        global loop
+    def run(self, *args, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(*args, **kwargs),
+            loop)
+
+    async def async_run(self, edit, event=None, **kwargs):
         view = self.view
         window = view.window()
         session = sessions.get_by_window(window)
@@ -60,14 +64,24 @@ class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
             selections = view.sel()
 
         for selection in selections:
-            compile_region(view, window, session, selection)
+            result = await compile_region(view, window, session, selection)
+            path = window.active_view().file_name()
+            erase_notes(view)
+            await handle_compilation_results(
+                window,
+                basename(path),
+                result[0])
 
     def want_event(self):
         return True
 
 class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
-    def run(self, edit, event=None, **kwargs):
-        global loop
+    def run(self, *args, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(*args, **kwargs),
+            loop)
+
+    async def async_run(self, edit, event=None, **kwargs):
         view = self.view
         window = view.window()
         session = sessions.get_by_window(window)
@@ -81,9 +95,14 @@ class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
                 max_iterations=settings().get("compilation")['max_search_iterations'])
         except RuntimeWarning:
             window.status_message("Failed to find top-level form within alloted search time")
-        
         if region is not None:
-            compile_region(view, window, session, region)
+            result = await compile_region(view, window, session, region)
+            path = window.active_view().file_name()
+            erase_notes(view)
+            await handle_compilation_results(
+                window,
+                basename(path),
+                result[0])
         else:
             window.status_message("Failed to find nearby top-level form.")
 
@@ -105,23 +124,30 @@ class SlyCompileFileCommand(sublime_plugin.WindowCommand):
 
 async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
-    if type(result) != list:
-        compilation_results[str(path)] = result
-        try:
-            if not result.success:
-                if load == True: 
-                    window.status_message("Loading cancelled due to unsuccessful compilation")
-                elif load == False:
-                    window.status_message("Compilation encountered at least one error")
-                if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
-                    show_notes_as_regions(window, path, result)
-                else: 
-                    show_notes_view(window, path, name, result)
-            elif len(result.notes) and settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
+    print("OK")
+    await handle_compilation_results(window, path, result)
+
+
+async def handle_compilation_results(window, path, result):
+    print("hi")
+    if type(result) == list:
+        return
+    compilation_results[str(path)] = result
+    try:
+        if not result.success:
+            if load == True: 
+                window.status_message("Loading cancelled due to unsuccessful compilation")
+            elif load == False:
+                window.status_message("Compilation encountered at least one error")
+            if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
                 show_notes_as_regions(window, path, result)
-        except Exception as e:
-            print(result)
-            print(f"Compilation Error Unknown {e}")
+            else: 
+                show_notes_view(window, path, name, result)
+        elif len(result.notes) and settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
+            show_notes_as_regions(window, path, result)
+    except Exception as e:
+        print(result)
+        print(f"Compilation Error Unknown {e}")
 
 
 if "compilation_results" not in globals():
@@ -196,7 +222,7 @@ def show_notes_as_regions(window, path, result: slynk.structs.CompilationResult)
     annotation_groups = config["annotation_groups"]
     view = window.find_open_file(path)
     if view is None or always_reopen:
-        view = self.window.open_file(path, sublime.TRANSIENT)
+        view = window.open_file(path, sublime.TRANSIENT)
     groups: List[Tuple[List[Regions], List[str]]] = []
     for i in range(0, len(annotation_groups)):
         groups.append(([], [])) # Create new tuples for each
@@ -254,11 +280,11 @@ class SlyRegionalNotesEventListener(sublime_plugin.EventListener):
         if not all([config["enable_hover"],
                     zone == HOVER_TEXT,
                     visible and visible > 0,
-                    path := view.settings().get("path-for-sly-compilation-notes")]): 
+                    path := view.settings().get("path-for-sly-compilation-notes"),
+                    result := compilation_results.get(path, None)]): 
             return
 
         dimensions = config["dimensions"]
-        result = compilation_results[path]
         regions, are_visible = compilation_results[(path, "regions")]
 
         # Linear search since the regions are unsorted :()
