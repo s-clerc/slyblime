@@ -86,13 +86,11 @@ class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
         window = view.window()
         session = sessions.get_by_window(window)
         if session is None: return
-        if event:
-            point = util.event_to_point(view, event)
         try:
-            region = util.find_form_region(
-                self.view, 
-                point if event else None, # Default start poirnt
-                max_iterations=settings().get("compilation")['max_search_iterations'])
+            region = util.find_toplevel_form(
+                view, 
+                util.event_to_point(view, event) if event else None, # Default start poirnt
+                settings().get("compilation")['max_search_iterations'])
         except RuntimeWarning:
             window.status_message("Failed to find top-level form within alloted search time")
         if region is not None:
