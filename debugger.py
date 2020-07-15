@@ -11,24 +11,30 @@ import uuid
 from html import escape
 
 from . import pydispatch
-
+from .html_dsl.elements import *
+from . import custom_elements as X
 
 if "futures" not in globals():
     futures = {}
 
 def design(debug_data, future_id):
+  try:
     def url(prefix, index):
         # The use of double curlies must be a joke
         return f'subl:debugger_sheet_url {{"url": "{prefix}-{index}", "future_id": "{future_id}"}}'
         
     affixes = sly.settings().get("debugger")["header_affixes"]
-    html = ('<html> <body class="sly sly-debugger" id="sly-debugger">' 
-        f'<style>{util.load_resource("stylesheet.css")}</style>'
-        f'<h1>{escape(affixes[0]+str(debug_data.level)+affixes[1])}</h1>'
-        f'<h2>{escape(debug_data.title)}</h2>'
-        f'<h3> {escape(debug_data.type)}</h3> <hr>'
-        f'<ol start="0">'
-         '<h4> Restarts: </h4>')
+    html = HTML[BODY(_class="sly sly-debugger")[
+        STYLE[util.load_resource("stylesheet.css")],
+        H1[escape(affixes[0]+str(debug_data.level)+affixes[1])],
+        H2[escape(debug_data.title)],
+        H3[escape(debug_data.type)],
+        H4["Restarts"],
+        (restarts := OL(start="0")),
+        H4["Backtrace"],
+        (frames := OL(start="1"))
+    ]]
+
     # Restarts
     for index, restart in enumerate(debug_data.restarts):
         label = restart[0].lower().capitalize()
@@ -37,20 +43,22 @@ def design(debug_data, future_id):
             label = label[1:]
         else: 
             is_preferred = False
-        html += (
-            f'<li><span class="sly button {"preferred" if is_preferred else ""}"><a href=\'{url("restart", index)}\'>{escape(label)}</a></span>'
-            f' {escape(restart[1])}</li>')
-    html += (
-        '</ol><hr><ol start="1">'
-        '<h4> Backtrace: </h4>')
+        restarts += [LI[
+            SPAN(_class="sly button " + ("preferred" if is_preferred else ""))[
+                A(href=url("restart", index))[escape(label)],
+                escape(restart[1])
+            ]]]
+
     #Stack frames:
     for index, frame_title, restartable in debug_data.stack_frames:
-        html += (
-            f'<li  value="{index}">' 
-            f'<a href=\'{url("frame", index)}\' class="stack_frame">'
-            f' {escape(frame_title)}</a></li>')
-    html += '</ol> </body> </html>'
+        frames += [LI(value=index)[
+            A(href=url("frame", index), _class="stack_frame")[
+                escape(frame_title)
+            ]]]
+    print(html)
     return html
+  except Exception as e:
+    print(e)
 
 async def show(session, debug_data):
     global futures
@@ -60,7 +68,7 @@ async def show(session, debug_data):
     html = design(debug_data, future_id)
     future = session.loop.create_future()
     futures[future_id] = future
-    sheet = session.window.new_html_sheet(title, html, 0)
+    sheet = session.window.new_html_sheet(title, str(html), 0)
     await future
     session.window.run_command("close")
     return future.result()
