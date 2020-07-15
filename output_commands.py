@@ -66,7 +66,7 @@ def determine_input(view, input, event):
             region = Region(point, point)
 
     if "toplevel" in input:
-        region = util.find_form_region(view, region.begin())
+        region = util.find_toplevel_form(view, region.begin())
     elif "buffer" in input:
         region = Region(0, view.size() - 1)
 

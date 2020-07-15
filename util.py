@@ -18,7 +18,6 @@ def get_if_in(dictionary, *items):
 
 async def show_input_panel(loop, window, prompt, initial_value, on_change=None):
     future = loop.create_future()
-    print("OK")
     def on_confirm(value):
         nonlocal future
         async def set_result(future, value):
@@ -56,7 +55,6 @@ def find_closest_before_point(view, point, regex):
         return None
     return possibilities[i]
 
-
 # Prefer before is used to determine which value to send in the event of
 # two regions equidistant from the point
 def find_closest(view, point, regex, prefer_before=True):
@@ -87,9 +85,10 @@ def find_closest(view, point, regex, prefer_before=True):
     else:
         return after_point
 
-PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
-IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 
+PACKAGE_REGEX = r"(?i)^\((cl:|common-lisp:)?in-package\ +[ \t']*([^\)]+)[ \t]*\)"
+
+IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 
 # Equivalent to Sly Current Package
 def current_package(view, point=None, return_region=False):
@@ -167,6 +166,15 @@ def in_lisp_file(view, settings: Callable):
     return len(matches) > 0
 
 
+"""
+    Below we have two functions which determine the form.
+    While `find_containing_form` could do both, the algorithm in
+    `find_toplevel_form` is far more efficent because it uses
+    expand_scope and so it skips much of the text.
+    
+    In addition `find_containing_form is vulnerable to escaped brackets if the
+    sublime-syntax doesn't distinguish them from delimiting brackets.
+"""
 SCOPE_REGEX = re.compile(r"(meta.(parens|section))")
 
 def get_scopes(view, point):
@@ -180,7 +188,7 @@ def determine_depth(scopes):
             depth += 1
     return depth
 
-def find_form_region(view, point: int=None, desired_depth=1, max_iterations=100) -> Region: 
+def find_toplevel_form(view, point: int=None, max_iterations=100) -> Optional[Region]:
     point = point or view.sel()[0].begin()
     region = view.extract_scope(point)
     # It only has the scope of the file, so its outside
@@ -204,15 +212,12 @@ def find_form_region(view, point: int=None, desired_depth=1, max_iterations=100)
     point: int = region.begin()
     scopes: str = get_scopes(view, point)
     depth: int = determine_depth(scopes)
-    if desired_depth == None: # Select the current depth
-        desired_depth = depth
     previous_region = Region(-1, -1)
     iterations = 0
     forward = True
     def should_continue():
-        return ((depth > desired_depth 
-                      or (desired_depth == 1 and len(scopes) > 2)) 
-                and iterations < max_iterations)
+        return ((depth > 1 or len(scopes) > 2)
+                  and iterations < max_iterations)
     while should_continue():
         if previous_region != region:
             point = region.begin() if forward else region.end()
@@ -229,13 +234,38 @@ def find_form_region(view, point: int=None, desired_depth=1, max_iterations=100)
         # a scope where the extract_scope is the top-level form
         if len(scopes) == 3 and "begin" in scopes[2]:
             forward = False
-    if depth == desired_depth:
+    if depth == 1:
         return region
     elif iterations >= max_iterations:
         raise RuntimeWarning("Search iterations exceeded")
     else:
-        print(depth, desired_depth)
         return None
+
+def find_containing_form(view, point: int=None, max_iterations=1000) -> Optional[Region]:
+    point = point or view.sel()[0].begin()
+    def find_extremity(point:int, direction: int, enter_scope: str, exit_scope: str):
+        unclosed_meta_scopes = 0
+        for i in range(0, max_iterations):
+            region = view.word(point)
+            word = view.substr(region)
+            if not ("(" in word or ")" in word):
+                if direction > 0:
+                    point = region.end()
+                elif direction < 0:
+                    point = region.begin()
+            *__, scope = get_scopes(view, point)
+            if enter_scope in scope:
+                unclosed_meta_scopes += 1
+            elif exit_scope in scope:
+                if unclosed_meta_scopes == 0:
+                    return point
+                unclosed_meta_scopes -= 1
+            point += direction
+        return None
+    start = find_extremity(point, -1, "parens.end", "parens.begin")
+    end = find_extremity(point, 1, "parens.begin", "parens.end")
+    # Plus one because regions are [x .. y) intervals
+    return Region(start, end+1) if start and end else None
 
 
 def event_to_point(view, event: Dict[str, int]) -> Tuple[int]:
