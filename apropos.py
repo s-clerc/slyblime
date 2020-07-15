@@ -36,14 +36,23 @@ class AproposCommand(sublime_plugin.WindowCommand):
         self.window.status_message(f"Apropos retrieved: {len(apropos)} matching symbols")
         previews = generate_previews(apropos)
         self.window.status_message(f"Apropos previews processed")
+        def callback(choice):
+            pass
         self.window.show_quick_panel(
             previews,
-            self.run_inspector,
+            functools.partial(self.callback, apropos),
             0b01)
         return 
 
-    def run_inspector(self, choice):
-        self.window.status_message(f"Run inspector is not yet implemented: {choice}")
+    def callback(self, apropos, choice):
+        designator = apropos[choice]["designator"]
+        self.window.active_view().run_command("sly_describe",
+            {
+                "mode": "symbol",
+                "input_source": "given",
+                "query": designator[1] + (":" if designator[2] else "::") + designator[0]
+            }) 
+        
 
 def process_doc(field):
     return "[Undocumented]" if type(field) == sexpdata.Symbol else str(field)

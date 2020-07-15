@@ -19,7 +19,7 @@
         "caption": "Evaluate toplevel at cursor",
         "command": "sly_eval_region",
         "args": {
-          "input": "toplevel"
+          "input_source": "toplevel"
         }
       },
       {
@@ -33,7 +33,7 @@
         "caption": "Expand-1 toplevel at cursor",
         "command": "sly_expand",
         "args": {
-          "input": "toplevel",
+          "input_source": "toplevel",
           "recursively": false,
         }
       },

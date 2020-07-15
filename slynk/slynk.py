@@ -311,6 +311,11 @@ class SlynkClient(Dispatcher):
             response = await self.rex(command, *args)
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
+    # defslyfuns
+    async def describe(self, expression_string: str,  mode="symbol", *args):
+        result = await self.rex(f"SLYNK:DESCRIBE-{mode.upper()} {dumps(expression_string)}", *args)
+        return result
+        
     # A defslyfun
     async def documentation_symbol(self, symbol_name):
         documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"')

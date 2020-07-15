@@ -81,7 +81,7 @@
         "caption": "Sly: Evaluate contents of view",
         "command": "sly_output",
         "args": {
-            "input": "buffer",
+            "input_source": "buffer",
             "mode": "eval"
         }
     },
@@ -89,7 +89,7 @@
         "caption": "Sly: Expand contents of view",
         "command": "sly_output",
         "args": {
-            "input": "buffer",
+            "input_source": "buffer",
             "mode": "eval"
         }
     }
