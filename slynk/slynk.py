@@ -1,78 +1,23 @@
 import asyncio, threading, pathlib
-from sys import maxsize
 
 try:
     from .util import *
     from .structs import *
+    from .client import *
+    from . import inspector, documentation, profiling, debug
 except ImportError as e:
     print(f"ImportError encoutered, switching gears: {e}")
     from util import *
     from structs import *
+    from client import *
+    from . import inspector, documentation, profiling, debug
 
-
-class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
-    _events_ = [
-        "reception",
-        "connect",
-        "disconnect"
-    ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.partial_message = None
-        self.transport = None
-
-    def connection_made(self, transport):
-        self.transport = transport
-        self.emit("connect")
-
-    def connection_lost(self, something):
-        self.emit("disconnect", something)
-
-    def complete_data(self, data):
-        if self.partial_message is None:
-            packet_size = int(data[0:6].decode("utf-8"), 16)
-            if len(data) - 6 < packet_size:
-                self.partial_message = data
-                return None
-            else:  # Data is already complete
-                return data
-        else:
-            self.partial_message += data
-            packet_size = int(self.partial_message[0:6].decode("utf-8"), 16)
-            if len(self.partial_message) - 6 < packet_size:
-                return None
-            else:  # Data is finally complete
-                data = self.partial_message
-                self.partial_message = None
-                return data
-
-    def data_received(self, data):
-        data = self.complete_data(data)
-        if data is None:
-            return
-        packet_size = int(data[0:6].decode("utf-8"), 16)
-        # print(data)
-        self.emit("reception", data[6:packet_size + 6])
-
-        remainder = data[packet_size + 6:]
-        if len(remainder) > 5:  # sanity check
-            # print("Remainder: ")
-            # print(remainder)
-            self.data_received(remainder)
-        elif len(remainder) > 0:
-            print("Erroneous remainder of ")
-            print(remainder)
-
-    def write(self, message):
-        output = message.encode("utf-8")
-        length = str(hex(len(output)))[2:].zfill(6).upper()
-        buffer = length.encode("utf-8") + output
-        self.transport.write(buffer)
-        print(buffer)
-
-
-class SlynkClient(Dispatcher):
+class SlynkClient(
+        Dispatcher,
+        inspector.Inspector,
+        documentation.Documentation,
+        profiling.Profiling,
+        debug.Debug):
     request_table: Dict[int, PromisedRequest]
     _events_ = [
         "connect",
@@ -90,8 +35,6 @@ class SlynkClient(Dispatcher):
         "profile_command_complete",  # only present for completeness, avoid using
         "disconnect"
     ]
-
-    DEFAULT_PACKAGE = "COMMON-LISP-USER"
 
     def __init__(self, host, port, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -285,56 +228,6 @@ class SlynkClient(Dispatcher):
         # await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
 
-    async def autodoc(self, expression_string, cursor_position, *args):
-        expression = loads(expression_string)
-        cursor_marker = Symbol("SLYNK::%CURSOR-MARKER%")
-        try:
-            output_forms = []
-            is_cursor_placed = False
-            previous_length = 0
-            for form in expression:
-                output_forms.append(str(form))
-                new_length = previous_length + len(dumps(form))
-                is_cursor_within_form = previous_length <= cursor_position <= new_length
-                if is_cursor_within_form and not is_cursor_placed:
-                    break
-                previous_length = new_length
-            # We're doing the weird thing below, because at the time
-            # sexpdata was doing this weird thing where 
-            # `dumps(Symbol("SLYNK::%CURSOR-MARKER%"))` => `'"SLYNK::%CURSOR-MARKER"'`
-            command = f"SLYNK:AUTODOC '{dumps(output_forms)[:-1]} SLYNK::%CURSOR-MARKER%) :PRINT-RIGHT-MARGIN 80"
-        except Exception as e:
-            print("Error constructing command")
-            print(e)
-            return Symbol(":NOT-AVAILABLE")
-        else:
-            response = await self.rex(command, *args)
-            return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
-
-    # defslyfuns
-    async def describe(self, expression_string: str,  mode="symbol", *args):
-        result = await self.rex(f"SLYNK:DESCRIBE-{mode.upper()} {dumps(expression_string)}", *args)
-        return result
-        
-    # A defslyfun
-    async def documentation_symbol(self, symbol_name):
-        documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"')
-        return documentation
-
-    # A defslyfun
-    async def apropos(self, pattern, external_only=True, case_sensitive=False, *args):
-        command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
-        propos_list = await self.rex(command, "T", *args)
-        x = [property_list_to_dict(plist) for plist in propos_list]
-        return x
-
-    async def completions(self, pattern, package=DEFAULT_PACKAGE, flex=True):
-        pattern = dumps(pattern)
-        command = f"SLYNK-COMPLETION:{'FLEX' if flex else 'SIMPLE'}-COMPLETIONS (QUOTE {pattern}) \"{package}\""
-        response = await self.rex(command, "T", package)
-        return [Completion(*completion[:-1], completion[3].split(","))
-                for completion in response[0]]
-
     async def eval(self, expression_string, is_region, *args):
         package = (args[0] if len(args) > 0 and args[0] is not None 
                            else "COMMON-LISP-USER")
@@ -342,245 +235,6 @@ class SlynkClient(Dispatcher):
         command = f"SLYNK:INTERACTIVE-EVAL{mode} {dumps(expression_string)}"
         result = await self.rex(command, "T", package)
         return result
-
-    ### Debugging stuff
-    def debug_setup_handler(self, expression):
-        def is_restartable(frame):
-            return bool(frame[2][1]) if len(frame) >= 3 else False
-
-        data = DebugEventData(
-            expression[1],  # Thread
-            expression[2],  # Level
-            expression[3][0],  # Title
-            expression[3][1],  # Type
-            [(str(restart[0]), str(restart[1])) for restart in expression[4]],
-            # Stack frames
-            [(int(frame[0]), str(frame[1]), is_restartable(frame)) for frame in expression[5]]
-        )
-        self.emit("debug_setup", data)
-
-    def debug_activate_handler(self, expression):
-        self.emit("debug_activate", DebugEventData(
-            expression[1],
-            expression[2]
-        ))
-
-    def debug_return_handler(self, expression):
-        self.emit("debug_return", DebugEventData(
-            expression[1],
-            expression[2]
-        ))
-
-    async def debug_invoke_restart(self, level, restart, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        command = "SLYNK:INVOKE-NTH-RESTART-FOR-EMACS " + str(level) \
-                  + " " + str(restart)
-        result = await self.rex(command, thread, package)
-        return result
-
-    async def debug_escape_all(self, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SLYNK:THROW-TO-TOPLEVEL", thread, package)
-        return result
-
-    async def debug_continue(self, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SLYNK:SLY-DB-CONTINUE", thread, package)
-        return result
-
-    async def debug_abort_current_level(self, level, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        if level == 1:
-            result = await self.debug_escape_all(thread, package)
-        else:
-            result = await self.rex("SLYNK:SLY-DB-ABORT", thread, package)
-        return result
-
-    async def debug_get_stack_trace(self, thread, *args):
-        frames = await self.rex("SLYNK:BACKTRACE 0 NIL", thread, *args)
-        return [StackFrame(
-            int(frame[0]),
-            str(frame[1]),
-            True if len(frame) >= 3 and bool(frame[2][1]) else False
-        ) for frame in frames]
-
-    async def debug_stack_frame_details(self, index, stack_frames, thread, *args):
-        frame = [frame for frame in stack_frames if frame.index == index][0]
-        if frame.locals is not None:
-            return frame
-        else:
-            response = await self.rex(f"SLYNK-FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
-            frame.locals = [StackFrameLocal(
-                str(local[1]),
-                int(local[3]),
-                str(local[5])
-            ) for local in response[0]]
-
-            frame.catch_tags = [str(tag) for tag in response[1]]
-            return frame
-
-    async def debug_restart_frame(self, frame, thread, *args):
-        response = await self.rex(f"SLYNK:RESTART-FRAME {frame}", thread, *args)
-        return response
-
-    async def debug_return_from_frame(self, frame, value, thread, *args):
-        was_error = await self.rex(f"SLYNK:SLY-DB-RETURN-FROM-FRAME {frame} {dumps(value)}", thread, *args)
-        if bool(was_error):
-            raise Exception("Lisp error while returning from frame: " + str(was_error))
-
-    async def debug_frame_source(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:FRAME-SOURCE-LOCATION {frame}", thread, *args)
-        return parse_location(result)
-
-    async def debug_disassemble_frame(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-DISASSEMBLE {frame}", thread, *args)
-        return str(result)
-
-    async def debug_eval_in_frame(self, frame, expression, thread, *args):
-        interpackage = await self.rex(f"SLYNK:FRAME-PACKAGE-NAME {frame}", thread, *args)
-        command = f"SLYNK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} {str(interpackage)}"
-        result = await self.rex(command, thread, *args)
-        return str(result)
-
-    async def debug_step(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-STEP {frame}", thread, *args)
-        return result
-
-    async def debug_next(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-NEXT {frame}", thread, *args)
-        return result
-
-    async def debug_out(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-OUT {frame}", thread, *args)
-        return result
-
-    async def debug_break_on_return(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-BREAK-ON-RETURN {frame}", thread, *args)
-        return result
-
-    async def debug_break(self, function_name, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", thread, *args)
-        return result
-
-    ### Inspector
-
-    # Careful, the format for commands here is as a list and not
-    # a precomposed string
-    async def eval_for_inspector(self, slyfun, *args, 
-                                # Keyword arguments in the original
-                                 package=DEFAULT_PACKAGE,
-                                 error_message="Inspection Failed",
-                                 restore_point=None, 
-                                 save_selected_window=False,
-                                 current_inspector=None,
-                                 target_inspector=None):
-                            # (Due to encapsulation, opener is non-present)
-        if not target_inspector:
-            target_inspector = self.current_inspector
-        if not current_inspector:
-            current_inspector = self.current_inspector
-
-        query = " ".join([
-            "SLYNK:EVAL-FOR-INSPECTOR",
-            dumps(current_inspector),
-            dumps(target_inspector),
-            f"'{slyfun}", 
-        ] + [dumps(element) for element in args])
-        result = await self.rex(query, "T", package)
-        return result
-
-    async def inspect(self, query, current_inspector=None, target_inspector=None, package=DEFAULT_PACKAGE):
-        result = await self.eval_for_inspector(
-            "SLYNK:INIT-INSPECTOR", query,
-            target_inspector=target_inspector,
-            current_inspector=current_inspector,
-            package=package)
-        return parse_inspection(result)
-
-    async def inspect_part(self, part, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK:INSPECT-NTH-PART", part,
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    async def inspector_call_action(self, action, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK::INSPECTOR-CALL-NTH-ACTION", action,
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    async def inspector_previous(self, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK:INSPECTOR-POP",
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    async def inspector_next(self, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK:INSPECTOR-NEXT",
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    async def reinspect(self, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK:INSPECTOR-REINSPECT",
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    async def toggle_verbose_inspection(self, current_inspector=None, target_inspector=None):
-        result = await self.eval_for_inspector(
-            "SLYNK:INSPECTOR-REINSPECT",
-            target_inspector=target_inspector,
-            current_inspector=current_inspector)
-        return parse_inspection(result)
-
-    ### Profiling
-
-    async def toggle_profiling_function(self, function_name, *args):
-        result = await self.rex(f"SLYNK:TOGGLE-PROFILE-FDEFINITION {dumps(function_name)}", ":REPL-THREAD", *args)
-        # self.emit("profile_command_complete", result)
-        return result
-
-    async def toggle_profiling_package(
-            self, package, should_record_callers, should_profile_methods, *args):
-        command = f"SLYNK:SLYNK-PROFILE-PACKAGE {dumps(package)} {dumps(should_record_callers)} {dumps(should_profile_methods)}"
-        result = await self.rex(command, ":REPL-THREAD", *args)
-        # self.emit("profile_command_complete", f"Attempting to profile {package}…")
-        return result, f"Attempting to profile {package}…"
-
-    async def stop_all_profiling(self, *args):
-        result = await self.rex("SLYNK/BACKEND:UNPROFILE-ALL", ":REPL-THREAD", *args)
-        # self.emit("profile_command_complete", result)
-        return result
-
-    async def reset_profiling(self, *args):
-        result = await self.rex("SLYNK/BACKEND:PROFILE-RESET", ":REPL-THREAD", *args)
-        # self.emit("profile_command_complete", result)
-        return result
-
-    async def profiling_report(self, *args):
-        result = await self.rex("SLYNK/BACKEND:PROFILE-REPORT", ":REPL-THREAD", *args)
-        # self.emit("profile_command_complete", "Profile report printed to REPL")
-        return result, "Profile report printed to REPL"
-
-    ### Code actions
-
-    async def find_definitions(self, function_name, *args):
-        raw_definitions = await self.rex(f"SLYNK:FIND-DEFINITIONS-FOR-EMACS {dumps(function_name)}", "T", *args)
-        definitions = []
-        for raw_definition in raw_definitions:
-            try:
-                location = parse_location(raw_definition[1])
-                if location.buffer_type != "error":
-                    definitions.append(Location(raw_definition[0], location))
-            except Exception as e:
-                print(f"Error find_definitions failed to parse {raw_definition}")
-        return definitions
 
     async def compile_string(self, string, buffer_name, file_name, position,
                              compilation_policy="'NIL", package=DEFAULT_PACKAGE):
@@ -615,108 +269,6 @@ class SlynkClient(Dispatcher):
 
     async def load_file(self, file_name, *args):
         result = await self.rex(f"SLYNK:LOAD-FILE {dumps(file_name)}", "T", *args)
-        return result
-
-    async def expand(self, form, package=DEFAULT_PACKAGE, name=False, recursively=True, macros=True, compiler_macros=True):
-      try:
-        print("hello")
-        if macros and compiler_macros:
-            function_name = "EXPAND"
-        elif macros:
-            function_name = "MACROEXPAND"
-        elif compiler_macros:
-            function_name = "COMPILER-MACROEXPAND"
-        else:
-            function_name = "nothing"
-            print(f"Trivial macroëxpanding being used for {form}")
-            return form
-
-        if str(recursively).upper() == "ALL":
-            if macros and not compiler_macros:
-                function_name += "-ALL"
-            else:
-                raise Exception("only macroexpand may use a repetition of ALL")
-        elif not recursively:
-            function_name += "-1"
-
-        result = await self.rex(f"SLYNK:SLYNK-{function_name} {dumps(form)}", "T", package)
-        if name:
-            return result, function_name
-        return result
-      except Exception as e:
-        print(f"aoeu {e}")
-
-    async def parse_inspection(self, result, *args):
-        if not result:
-            return None
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        inspection = InspectionData("", -1, [])
-        raw_content = []
-        for (key, value) in zip(result, result[1:]):
-            key = key.upper()
-            if key == ":TITLE":
-                inspection.title = value
-            elif key == ":CONTENT":
-                raw_content = value
-            else:
-                print(f"Unknown key {key} found in presentation results")
-
-        [content_description, content_length, content_start, content_end] = raw_content
-
-        if content_end < content_length:
-            result_1 = await self.rex(f"SLYNK:INSPECTOR-RANGE {str(content_length)} {maxsize}", "T", package)
-            content_description_1 = result_1[0]
-            if int(result_1[3]) <= int(result_1[1]):
-                raise Exception("Continues to miss part of the inspection")
-            content_description += content_description_1
-
-        inspection.content = [
-            [element[0], element[1], element[2]] if type(element) != str else element
-            for element in content_description]
-
-        return inspection
-
-    async def inspect_presentation(self, presentation_id, should_reset=False, *args):
-        should_reset = "T" if len(args) > 0 and args[0] else "NIL"
-        inspection_result = await self.rex(f"SLYNK:INSPECT-PRESENTATION {str(presentation_id)} {dumps(should_reset)}",
-                                           ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_frame_var(self, frame_index, variable, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_in_frame(self, frame_index, expression_string, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-IN-FRAME {dumps(expression_string)} {str(frame_index)}",
-                                           thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_current_condition(self, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-CURRENT-CONDITION", thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_nth_part(self, n, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-NTH-PART {str(n)}", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_call_action(self, n, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECTOR-CALL-NTH-ACTION {str(n)}", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_previous_object(self, *args):
-        inspection_result = await self.rex("SLYNK:INSPECTOR-POP", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_next_object(self, *args):
-        inspection_result = await self.rex("SLYNK:INSPECTOR-NEXT", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
         return result
 
     def interrupt(self):
