@@ -103,7 +103,7 @@ class Debug:
 
     async def debug_eval_in_frame(self, frame, expression, thread, *args):
         interpackage = await self.rex(f"SLYNK:FRAME-PACKAGE-NAME {frame}", thread, *args)
-        command = f"SLYNK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} {str(interpackage)}"
+        command = f'SLYNK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} "{str(interpackage)}"'
         result = await self.rex(command, thread, *args)
         return str(result)
 

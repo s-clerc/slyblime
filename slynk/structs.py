@@ -33,7 +33,7 @@ class StackFrame:
 
 @dataclass
 class DebugEventData:
-    thread: str = None
+    thread: int = None
     level: Any = None
     title: Any = None
     type: Any = None
