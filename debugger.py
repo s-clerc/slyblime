@@ -38,6 +38,13 @@ class Debugger(ui.UIView):
         self.flip()
         self.current_locals = None
 
+    def describe(self, index=None):
+        return (f"Error: {self.data.title}\n"
+                f"Type: {self.data.type}\n"
+                f"Thread: {self.data.thread}\n"
+                f"Level: {self.data.level}\n"
+                f"Frame: {self.data.stack_frames[index].description if index is not None else 'unspecified here'}")
+
     def design(self, data):
         affixes = sly.settings().get("debugger")["view_title_affixes"]
         self.name = affixes[0] + str(data.level) + affixes[1]
@@ -46,7 +53,7 @@ class Debugger(ui.UIView):
             STYLE[util.load_resource("stylesheet.css")],
             H1[escape(affixes[0]+str(data.level)+affixes[1])],
             H2[escape(data.title)],
-            H3[escape(data.type)],
+            H3[escape(data.type), " in thread ", escape(str(data.thread))],
             H4["Restarts"],
             (restarts := OL(start="0")),
             H4["Backtrace"],
@@ -80,6 +87,7 @@ class Debugger(ui.UIView):
 
     async def on_url_press(self, action, index, **rest):
         index = int(index)
+        action = action.lower()
         if action == "frame":
           try:
             element = self.html.get_element_by_id(f"frame-{index}")[0]
@@ -101,7 +109,8 @@ class Debugger(ui.UIView):
                             escape(local.name), ": ", A(href=self.url({"action": "frame-describe", "index": i}))[escape(local.value)]
                             ] for i, local in enumerate(self.data.stack_frames[index].locals)]
                     ],
-                    X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"]
+                    X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"], " ",
+                    X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"],
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
@@ -114,17 +123,33 @@ class Debugger(ui.UIView):
         elif action == "disassemble-frame":
             ui.send_result_to_panel(
                 self.window,
-                text=(f"Error: {self.data.title}\n"
-                      f"Type: {self.data.type}\n"
-                      f"Thread: {self.data.thread}\n"
-                      f"Level: {self.data.level}\n"
-                      f"Frame: {self.data.stack_frames[index].description}"),
+                text=self.describe(),
                 header="Frame disassembly from debugger:",
                 should_fold= True,
                 result=await self.session.slynk.debug_disassemble_frame(
                     index,
                     self.data.thread
                 ))
+        elif action == "eval-frame":
+            print("EV")
+            result = await self.session.slynk.debug_eval_in_frame(
+                index, 
+                await util.show_input_panel(
+                    sly.loop, 
+                    self.window, 
+                    f"Evaluee for frame", 
+                    ""),
+                self.data.thread)
+            if "\n" in result:
+                ui.send_result_to_panel(
+                    self.window,
+                    text=self.describe(),
+                    header="Interactive evaluation in frame from debugger",
+                    should_fold=True,
+                    result=result)
+            else:
+                self.window.status_message(result)
+            
         else:
             futures[self.future_id].set_result((action, index))
 
