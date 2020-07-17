@@ -12,7 +12,7 @@ def get_results_view(window):
             break
     if view and view.settings().get("is-sly-output-view"):
         return view
-    session = sessions.get_by_window(self.view.window())
+    session = sessions.get_by_window(window)
     if session is None: 
         print("Error session should exist but doesn't 1")
         raise Exception("Session should exist but doesn't 1")
@@ -180,13 +180,14 @@ class SlyDescribeCommand(sublime_plugin.TextCommand):
 
     async def async_run(self, *args, mode="symbol", input_source="ask", output="panel", **kwargs):
       try:
-        session = sessions.get_by_window(self.view.window())
+        window = self.view.window() or self.window
+        session = sessions.get_by_window(window)
         if session is None: return 
         print("hello")
         if input_source == "ask":
             query = await util.show_input_panel(
                 loop, 
-                self.view.window(), 
+                window, 
                 f"Describe:", 
                 "")
         elif input_source == "given":
@@ -194,8 +195,8 @@ class SlyDescribeCommand(sublime_plugin.TextCommand):
         result = await session.slynk.describe(query, mode)
         print(result)
         send_result_to_panel(
-            window=self.view.window(), 
+            window=window,
             result=result, 
             header=f"Description ({mode}) for {query}")
       except Exception as e:
-        print(e)
+        print("SlyDescribeCommandException", e)
