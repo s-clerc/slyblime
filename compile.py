@@ -194,11 +194,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             location = result.notes[int(index)].location
             point = location["position"]
             path = location["file"]
-            view = self.window.find_open_file(path)
-            if view is None or config["always_reopen_file"]:
-                view = self.window.open_file(path, sublime.TRANSIENT)
-
-            view.show_at_center(point)
+            view = util.open_file_at(self.window, path, point)
             snippet_region = find_snippet_region(view, location["snippet"], point)
             util.highlight_region(
                 view,
