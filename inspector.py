@@ -250,7 +250,7 @@ class Inspector(ui.UIView):
                 await self.reinspect()
             elif index == "input":
                 expression = await show_input_panel(
-                    self.session.loop, self.sheet.window(),
+                    self.session.loop, self.window,
                     "Evaluee for inspection:",
                     "")
                 await self.inspect(expression)
