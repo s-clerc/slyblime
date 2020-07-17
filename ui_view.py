@@ -1,10 +1,9 @@
-import asyncio
+import asyncio, uuid, json
+from datetime import datetime
+
 from sublime import *
 import sublime_plugin
-from .html_dsl.elements import *
-from . import custom_elements as X
-import uuid
-from datetime import datetime
+
 from .sly import *
 from typing import *
 
@@ -63,11 +62,21 @@ class UIView:
         del self._name
 
     def reöpen(self, window):
-        self.sheet = window.new_html_sheet("UiView", self.html)
+        self.sheet = window.new_html_sheet("UiView", str(self.html))
 
     @property
     def is_open(self):
         return self.sheet.window() is not None
+
+    def url(self, parameters):
+        parameters["id"] = self.id
+        return f"subl:sly_url {json.dumps(parameters)}"
+
+    def destroy(self):
+        del VIEWS[self.id]
+        self.html = "[destroyed]"
+        self.name = "[destroyed]"
+        self.flip()
 
 
 # Sadly sublime text does support `<sub></sub>`
@@ -88,3 +97,8 @@ def to_subscript_unicode(string):
     for character in string:
         output += map[character] 
     return output
+
+
+def url(id, parameters):
+    parameters["id"] = id
+    return f"subl:sly_url {json.dumps(parameters)}"
