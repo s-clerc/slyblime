@@ -70,6 +70,7 @@ class Debugger(ui.UIView):
             restarts += [LI[
                 SPAN(_class="sly button " + ("preferred" if is_preferred else ""))[
                     A(href=self.url({"action":"restart", "index":index}))[escape(label)],
+                    " ",
                     escape(restart[1])
                 ]]]
         #Stack frames:
@@ -125,7 +126,7 @@ class Debugger(ui.UIView):
         elif action == "disassemble-frame":
             ui.send_result_to_panel(
                 self.window,
-                text=self.describe(),
+                text=self.describe(index),
                 header="Frame disassembly from debugger:",
                 should_fold= True,
                 result=await slynk.debug_disassemble_frame(
@@ -145,7 +146,7 @@ class Debugger(ui.UIView):
             if "\n" in result:
                 ui.send_result_to_panel(
                     self.window,
-                    text=self.describe(),
+                    text=self.describe(index),
                     header="Interactive evaluation in frame from debugger",
                     should_fold=True,
                     result=result)
