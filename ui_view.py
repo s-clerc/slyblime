@@ -1,4 +1,4 @@
-import asyncio, uuid, json
+import asyncio, uuid, json, math
 from datetime import datetime
 
 from sublime import *
@@ -103,3 +103,54 @@ def to_subscript_unicode(string):
 def url(id, parameters):
     parameters["id"] = id
     return f"subl:sly_url {json.dumps(parameters)}"
+
+"""
+    Second type of UI below, the results panel.
+    It works just like the Sublime `Find Results` view.
+"""
+def number_lines(text, prefix="", suffix=" "):
+    lines = text.split("\n")
+    width = math.ceil(math.log(len(lines)))
+    offset = settings().get("line_offset")
+    return "\n".join([prefix + str(n+offset).rjust(width, ' ') + suffix + line 
+                      for n, line in enumerate(lines)])
+
+def get_results_view(window):
+    view = None
+    for maybe_view in window.views():
+        if maybe_view.name() == "Sly Output":
+            view = maybe_view
+            break
+    if view and view.settings().get("is-sly-output-view"):
+        return view
+    session = sessions.get_by_window(window)
+    if session is None: 
+        print("Error session should exist but doesn't 1")
+        raise Exception("Session should exist but doesn't 1")
+    view = window.new_file()
+    view.set_name("Sly Output")
+    view.set_scratch(True)
+    view.set_read_only(True)
+    view.settings().set("is-sly-output-view", True)
+    return view
+
+def send_result_to_panel(window, text=None, result="[No result]", header="[Command_header]", file_name=None, should_fold=True):
+    view = get_results_view(window)
+    out = [header + "\n",
+           number_lines(text, " ") if text else "",
+           f"\nfrom: {file_name} is:\n" if file_name else "\n is:\n",
+           number_lines(result, " "),
+           "\n\n"]
+    # We store the position just before the result so
+    # we can navigate the user there as that's what they actually care about
+    # we also fold the region of the original text
+    origin = view.size()
+    region = Region(origin+len(out[0]), origin+len(out[0])+len(out[1]))
+    out = "".join(out)
+    view.run_command("repl_insert_text",
+        {"pos": view.size(),
+         "text": out})
+    window.focus_view(view)
+    if text and should_fold:
+        view.fold(region)
+    view.show(Region(origin, origin+len(out)))  
