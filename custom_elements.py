@@ -25,5 +25,28 @@ class Checkbox(BaseHtmlElement):
                 SPAN["✓" if is_checked else "&nbsp;"]
         ])
 
+class RenamedSpan(BaseHtmlElement):
+    def __str__(self):
+        previous = self.name
+        self.name = "span"
+        result = super().__str__()
+        self.name = previous
+        return result
+
+class Details(BaseHtmlElement):
+    def __str__(self):
+        if "open" in self.attributes:
+            element = DIV(**self.attributes)
+            element += self
+            print("aoeu", element)
+            return str(element)
+        else:
+            return str(DIV(**self.attributes)[
+                self[0] if (len(self) > 0 and isinstance(self[0], BaseHtmlElement) 
+                                          and "SUMMARY" in self[0].name.upper()) 
+                        else ""
+            ])
 BUTTON = Button("x:button")
 CHECKBOX = Checkbox("x:checkbox")
+DETAILS = Details("x:details")
+SUMMARY = RenamedSpan("x:summary")
