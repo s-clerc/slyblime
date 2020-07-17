@@ -88,6 +88,7 @@ class Debugger(ui.UIView):
     async def on_url_press(self, action, index, **rest):
         index = int(index)
         action = action.lower()
+        slynk = self.session.slynk
         if action == "frame":
           try:
             element = self.html.get_element_by_id(f"frame-{index}")[0]
@@ -96,7 +97,7 @@ class Debugger(ui.UIView):
             elif "downloaded" in element.attributes:
                 element.attributes["open"] = "open"
             else:
-                await self.session.slynk.debug_stack_frame_details(
+                await slynk.debug_stack_frame_details(
                     index,
                     self.data.stack_frames,
                     self.data.thread)
@@ -110,6 +111,7 @@ class Debugger(ui.UIView):
                             ] for i, local in enumerate(self.data.stack_frames[index].locals)]
                     ],
                     X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"], " ",
+                    X.BUTTON(href=self.url({"action": "locate-frame", "index": index}))["Locate"], " ",
                     X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"],
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
@@ -126,13 +128,13 @@ class Debugger(ui.UIView):
                 text=self.describe(),
                 header="Frame disassembly from debugger:",
                 should_fold= True,
-                result=await self.session.slynk.debug_disassemble_frame(
+                result=await slynk.debug_disassemble_frame(
                     index,
                     self.data.thread
                 ))
         elif action == "eval-frame":
             print("EV")
-            result = await self.session.slynk.debug_eval_in_frame(
+            result = await slynk.debug_eval_in_frame(
                 index, 
                 await util.show_input_panel(
                     sly.loop, 
@@ -149,7 +151,16 @@ class Debugger(ui.UIView):
                     result=result)
             else:
                 self.window.status_message(result)
-            
+        elif action == "locate-frame":
+            result = await slynk.debug_frame_source(index, self.data.thread)
+            if result.file:
+                try:
+                    print("OUaoeu")
+                    print(result.position.offset)
+                    util.open_file_at(self.window, result.file, result.position.offset)
+                    print("OK  aaa REVER")
+                except Exception as e:
+                    print("NAYAY", e)
         else:
             futures[self.future_id].set_result((action, index))
 
