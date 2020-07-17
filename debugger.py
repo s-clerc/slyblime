@@ -14,6 +14,7 @@ from . import pydispatch
 from .html_dsl.elements import *
 from . import custom_elements as X
 from . import ui_view as ui
+from . import output_commands
 
 if "futures" not in globals():
     futures = {}
@@ -99,7 +100,8 @@ class Debugger(ui.UIView):
                         [LI(id=f"frame-{index}-local-{i}")[
                             escape(local.name), ": ", A(href=self.url({"action": "frame-describe", "index": i}))[escape(local.value)]
                             ] for i, local in enumerate(self.data.stack_frames[index].locals)]
-                    ]
+                    ],
+                    X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"]
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
@@ -109,6 +111,20 @@ class Debugger(ui.UIView):
             self.window.run_command("sly_describe",
                 {"query": self.current_locals[index].value,
                  "input_source": "given"})
+        elif action == "disassemble-frame":
+            ui.send_result_to_panel(
+                self.window,
+                text=(f"Error: {self.data.title}\n"
+                      f"Type: {self.data.type}\n"
+                      f"Thread: {self.data.thread}\n"
+                      f"Level: {self.data.level}\n"
+                      f"Frame: {self.data.stack_frames[index].description}"),
+                header="Frame disassembly from debugger:",
+                should_fold= True,
+                result=await self.session.slynk.debug_disassemble_frame(
+                    index,
+                    self.data.thread
+                ))
         else:
             futures[self.future_id].set_result((action, index))
 
