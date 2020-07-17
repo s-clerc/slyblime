@@ -1,14 +1,12 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional, Union, Dict
+from typing import *
 
-@dataclass
-class DebugEventData:
-    thread: str = None
-    level: Any = None
-    title: Any = None
-    type: Any = None
-    restarts: list = None
-    stack_frames: list = None
+
+class DictAsObject(object):
+    def __init__(self, dict):
+        self.__dict__ = dict
+    def __repr__(self):
+        return str(self.__class__)[:-1] + "|" + str(self.__dict__)[1:-1] + ">"
 
 
 @dataclass
@@ -25,7 +23,6 @@ class StackFrameLocal:
     id: int
     value: str
 
-
 @dataclass
 class StackFrame:
     index: int
@@ -33,6 +30,15 @@ class StackFrame:
     is_restartable: bool
     locals: List[StackFrameLocal] = None
     catch_tags: List[str] = None
+
+@dataclass
+class DebugEventData:
+    thread: str = None
+    level: Any = None
+    title: Any = None
+    type: Any = None
+    restarts: List[Tuple[str, str]] = None
+    stack_frames: List[StackFrame] = None
 
 
 @dataclass
@@ -74,21 +80,6 @@ class Definition:
 
 
 @dataclass
-class Completion:
-    name: str
-    probability: float
-    match_locations: List[List[Union[int, str]]]
-    namespaces: List[str]
-
-
-class DictAsObject(object):
-    def __init__(self, dict):
-        self.__dict__ = dict
-    def __repr__(self):
-        return str(self.__class__)[:-1] + "|" + str(self.__dict__)[1:-1] + ">"
-
-
-@dataclass
 class ConnexionInformation:
     pid: int = None
     style: str = None
@@ -102,13 +93,19 @@ class ConnexionInformation:
 
 
 @dataclass
+class Completion:
+    name: str
+    probability: float
+    match_locations: List[List[Union[int, str]]]
+    namespaces: List[str]
+
+@dataclass
 class CompilationNote:
     message: str = ""
     severity: str = ""
     location: Dict[str, Any] = None
     references: list = None
     source_context: Any = None
-
 
 @dataclass
 class CompilationResult:
