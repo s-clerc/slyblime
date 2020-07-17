@@ -138,10 +138,10 @@ def parse_location(raw_location):
         return data
     # symbexp of form (:LOCATION <buffer> <position> <hints>)
     raw_buffer = raw_location[1]
-    data.buffer_type = raw_buffer[0][1:].lower()
+    data.buffer_type = raw_buffer[0][1:].lower() or None
     buffer_type = data.buffer_type
-    second = str(raw_buffer[1])
-    third = str(raw_buffer[2])
+    second = str(raw_buffer[1]) if len(raw_buffer) > 1 else None
+    third = str(raw_buffer[2]) if len(raw_buffer) > 2 else None
     # Parse type
     if buffer_type == "file":
         data.file = second
@@ -156,7 +156,7 @@ def parse_location(raw_location):
         data.zip_file = second
         data.zip_entry = third
 
-    data.position = self.parse_position(raw_location[2])
+    data.position = parse_position(raw_location[2])
     data.hints = raw_location[3:]
     return data
 
