@@ -15,12 +15,8 @@ import html
 import re
 from datetime import datetime
 
+from . import ui_view as ui
 from . import pydispatch
-
-if "futures" not in globals():
-    futures = {}
-    inspectors = {}
-    nearest_inspector = None
 
 
 async def async_run(session, window, **kwargs):
@@ -35,14 +31,11 @@ async def async_run(session, window, **kwargs):
             session.inspectors.values(),
             key=lambda i: i.last_modified,
             reverse=True)
-        print(recent_inspectors)
-        print(session.inspectors)
         done = False
         for i, inspector in enumerate(recent_inspectors):
             if not_open and inspector.is_open:
                 continue
             if not inspector.is_open:
-                print("reöpening")
                 inspector.reöpen(window)
             if switch:
                 window.focus_sheet(inspector.sheet)
@@ -53,7 +46,7 @@ async def async_run(session, window, **kwargs):
             Inspector(session, window, expression)
 
     except Exception as e:
-        print(e)
+        print(f"InspectCommandException {e}")
 
 
 class InspectCommand(sublime_plugin.WindowCommand):
@@ -94,7 +87,7 @@ def escape(string, setting=None):
 
 def url(id, mode, index=None):
     # The use of double curlies must be a joke
-    return f'subl:inspector_sheet_url {{"id":"{id}", "mode": "{mode}", "index": "{index}"}}'
+    return ui.url(id, {"mode": mode, "index": index})
 
 
 def linewise(content):
@@ -113,25 +106,6 @@ def linewise(content):
 
 INDICATOR_REGEX = re.compile(r"@\d+(?==)")
 
-# Sadly sublime text does support `<sub></sub>`
-def to_subscript_unicode(string):
-    map = {
-        "0": "₀",
-        "1": "₁",
-        "2": "₂",
-        "3": "₃",
-        "4": "₄",
-        "5": "₅",
-        "6": "₆",
-        "7": "₇",
-        "8": "₈",
-        "9": "₉",
-    }
-    output = ""
-    for character in string:
-        output += map[character] 
-    return output
-
 def structure_content(id, content):
     # Split content into lines
     lines = linewise(content)
@@ -143,12 +117,12 @@ def structure_content(id, content):
         if line_mode == "value":
             if match := INDICATOR_REGEX.match(line.content):
                 indicator = SPAN(_class="sly subscript")[
-                    to_subscript_unicode(match.group(0)[1:])
+                    ui.to_subscript_unicode(match.group(0)[1:])
                 ]
                 start = match.span()[1]+1
             else:
                 indicator = ""
-                start=0
+                start = 0
             return A(
                 _class=f"sly-inspector-link {line_mode}",
                 href=precomputed_url)[
@@ -163,7 +137,6 @@ def structure_content(id, content):
                 return X.BUTTON(href=precomputed_url)[
                     escape(line.content.strip())[1:-1]
                 ]
-
     return [
         DIV(_class="sly-inspector-field")[
             [SPAN(_class="sly-inspector-label")[
@@ -193,99 +166,32 @@ def design(id, inspection):
         ]
     ]]
 
-class InspectorSheetUrlCommand(sublime_plugin.WindowCommand):
-    def run(self, **kwargs):
-        asyncio.run_coroutine_threadsafe(
-            self.async_run(**kwargs),
-            sly.loop)
-
-    async def async_run(self, **q):
-      try:
-        q = slynk.util.DictAsObject(q)
-        inspector = inspectors[q.id]
-        if q.mode == "browser":
-            if q.index == "previous":
-                await inspector.previous()
-            elif q.index == "next":
-                await inspector.next()
-            elif q.index == "refresh":
-                await inspector.reinspect()
-            elif q.index == "input":
-                session = sly.sessions.get_by_window(self.window)
-                if session is None: return
-                expression = await show_input_panel(
-                    session, self.window,
-                    "Evaluee for inspection:",
-                    "")
-                await inspector.inspect(expression)
-            else:
-                print(f"Inspector.py: Unknown query {q}")
-        elif q.mode == "value":
-            await inspector.inspect_part(int(q.index))
-        elif q.mode == "action":
-            await inspector.call_action(int(q.index))
-        else:
-            print(f"Inspector.py: Unknown query {q}")
-      except e as Exception:
-        print(e)
-
-
 def parse_inspector(id, target_inspector):
     if type(target_inspector) == Inspector:
         return target_inspector.id
     elif target_inspector is None:
         return id
 
-class Inspector():
+class Inspector(ui.UIView):
     def __init__ (self, session, window, query=None, package="COMMON-LISP-USER"):
-        self.session = session
-        self.slynk = session.slynk
-        self.html = "System ready..."
-        self.id = uuid.uuid4().hex
-        self.last_modified = datetime.now()
-        self.reöpen(window)
-        inspectors[self.id] = self
+        super().__init__(window, session)
         self.session.inspectors[self.id] = self
         if query:
             asyncio.run_coroutine_threadsafe(
                 self.inspect(query, package), 
                 sly.loop)
+        self.name = "Sly: Inspector"
 
     # The main reason `self.html` is not a property is just in case
     # I want to incrementally edit the HTML DOM-style.
     def flip(self):
-        global nearest_inspector
-        self.sheet.set_contents(str(self.html))
         self.session.nearest_inspector = self
-        self.last_modified = datetime.now()
+        super().flip()
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-        self.sheet.set_name(value)
-
-    @name.deleter
-    def name(self):
-        del self._name
-
-    def reöpen(self, window):
-        self.sheet = window.new_html_sheet("inspection", "System ready...")
-
-    @property
-    def is_open(self):
-        return self.sheet.window() is not None
-    
     async def inspect(self, query, package=None):
-        try:
-            self.html = design(
-                self.id,
-                await self.slynk.inspect(query, self.id, self.id, package))
-        except Exception as e:
-            print(e)
+        self.html = design(
+            self.id,
+            await self.slynk.inspect(query, self.id, self.id, package))
         self.flip()
 
     async def call_action(self, index, target_inspector=None):
@@ -334,5 +240,25 @@ class Inspector():
             await self.slynk.toggle_verbose_inspection(self.id))
         self.flip()
 
+    async def on_url_press(self, mode, index, **rest):
+        if mode == "browser":
+            if index == "previous":
+                await self.previous()
+            elif index == "next":
+                await self.next()
+            elif index == "refresh":
+                await self.reinspect()
+            elif index == "input":
+                expression = await show_input_panel(
+                    self.session.loop, self.sheet.window(),
+                    "Evaluee for inspection:",
+                    "")
+                await self.inspect(expression)
+            else:
+                print(f"inspector.py: Unknown query {mode}, {index}, {rest}")
+        elif mode == "value":
+            await self.inspect_part(int(index))
+        elif mode == "action":
+            await self.call_action(int(index))
 
 
