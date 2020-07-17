@@ -95,7 +95,7 @@ class BaseHtmlElement(list):
         return f"{blank}<{self.name}{attributes}>{children}{blank}</{self.name}>"
 
     def get_element_by_id(self, id):
-        if self.attributes["id"] == id:
+        if self.attributes.get("id", None) == id:
             return self
         for element in self:
             if not isinstance(element, BaseHtmlElement):
