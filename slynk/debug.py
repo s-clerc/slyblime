@@ -20,7 +20,7 @@ class Debug:
             expression[3][1],  # Type
             [(str(restart[0]), str(restart[1])) for restart in expression[4]],
             # Stack frames
-            [(int(frame[0]), str(frame[1]), is_restartable(frame)) for frame in expression[5]]
+            [StackFrame(int(frame[0]), str(frame[1]), is_restartable(frame)) for frame in expression[5]]
         )
         self.emit("debug_setup", data)
 
@@ -74,7 +74,7 @@ class Debug:
         if frame.locals is not None:
             return frame
         else:
-            response = await self.rex(f"SLYNK-FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
+            response = await self.rex(f"SLYNK:FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
             frame.locals = [StackFrameLocal(
                 str(local[1]),
                 int(local[3]),
