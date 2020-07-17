@@ -92,5 +92,16 @@
             "input_source": "buffer",
             "mode": "eval"
         }
+    },
+    {
+        "caption": "Sly: Describe symbol normally",
+        "command": "sly_describe"
+    },
+    {
+        "caption": "Sly: Describe symbol as function",
+        "command": "sly_describe",
+        "args": {
+            "mode": "function"
+        }
     }
 ]
