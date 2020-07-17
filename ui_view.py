@@ -20,10 +20,7 @@ class SlyUrlCommand(sublime_plugin.WindowCommand):
 
     async def async_run(self, **q):
       try:
-        print(q)
-        print(VIEWS)
         view = VIEWS[q["id"]]
-        print(view)
         await view.on_url_press(**q)
       except e as Exception:
         print(e)
@@ -47,6 +44,10 @@ class UIView:
     def flip(self):
         self.sheet.set_contents(str(self.html))
         self.last_modified = datetime.now()
+
+    @property
+    def window(self):
+        return self.sheet.window()
 
     @property
     def name(self):
