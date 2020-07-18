@@ -53,6 +53,9 @@ class SlynkSession:
         self.window.status_message(f"Attempting to connect to Slynk at {slynk.host}:{slynk.port} [≈ 1 min]")
         await slynk.connect(asyncio.get_event_loop())
         await slynk.prepare(f"{packages_path()}/Slims")
+        set_timeout(
+            lambda: self.window.run_command("sly_create_repl"),
+            10)
         #await slynk.closed()
 
     def on_connect(self, *args):
