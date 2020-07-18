@@ -129,25 +129,6 @@ class Debugger(ui.UIView):
                     index,
                     self.data.thread
                 ))
-        elif action == "eval-frame":
-            print("EV")
-            result = await slynk.debug_eval_in_frame(
-                index, 
-                await util.show_input_panel(
-                    sly.loop, 
-                    self.window, 
-                    f"Evaluee for frame", 
-                    ""),
-                self.data.thread)
-            if "\n" in result:
-                ui.send_result_to_panel(
-                    self.window,
-                    text=self.describe(index),
-                    header="Interactive evaluation in frame from debugger",
-                    should_fold=True,
-                    result=result)
-            else:
-                self.window.status_message(result)
         elif action == "locate-frame":
             result = await slynk.debug_frame_source(index, self.data.thread)
             if result.file:
@@ -178,18 +159,47 @@ class Debugger(ui.UIView):
           except Exception as e:
             print("IE", e)
         elif action == "return-frame":
-            await slynk.debug_return_from_frame(
-                index, 
-                await util.show_input_panel(
-                    sly.loop, 
-                    self.window, 
-                    f"Return for frame", 
-                    ""),
-                self.data.thread)
-        elif action == "restart":
-            await slynk.debug_invoke_restart(self.data.level, index, self.data.thread)
-        elif action == "restart-frame":
-            await slynk.debug_restart_frame(index, self.data.thread)
+            try:
+                await slynk.debug_return_from_frame(
+                    index, 
+                    await util.show_input_panel(
+                        sly.loop, 
+                        self.window, 
+                        f"Return for frame", 
+                        ""),
+                    self.data.thread)
+            except Exception as e:
+                self.window.status_message(str(e))
+        else:
+            if action == "eval-frame":
+                print("EV")
+                result = await slynk.debug_eval_in_frame(
+                    index, 
+                    await util.show_input_panel(
+                        sly.loop, 
+                        self.window, 
+                        f"Evaluee for frame", 
+                        ""),
+                    self.data.thread)
+                header = "Interactive evaluation in frame from debugger"
+            elif action == "restart":
+                result = await slynk.debug_invoke_restart(self.data.level, index, self.data.thread)
+                header = "Invokation of debugger restart"
+            elif action == "restart-frame":
+                result = await slynk.debug_restart_frame(index, self.data.thread)
+                header = "Invokation of frame restart"
+            else:
+                result = "Error, URL command unknown"
+            print(result)
+            if "\n" in result:
+                ui.send_result_to_panel(
+                    self.window,
+                    text=self.describe(index),
+                    header=header,
+                    should_fold=True,
+                    result=result)
+            else:
+                self.window.status_message(result)
       except Exception as e:
         print("UrlError", e)
 
