@@ -93,6 +93,7 @@ class Debugger(ui.UIView):
         index = int(index) if index is not None else None
         action = action.lower()
         slynk = self.session.slynk
+        should_close = False
         if action == "frame":
           try:
             element = self.html.get_element_by_id(f"frame-{index}")[0]
@@ -118,7 +119,8 @@ class Debugger(ui.UIView):
                     X.BUTTON(href=self.url({"action": "locate-frame", "index": index}))["Locate"], " ",
                     X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"], " ",
                     X.BUTTON(href=self.url({"action": "inspect-frame", "index": index}))["Inspect…"], " ",
-                    X.BUTTON(href=self.url({"action": "restart-frame", "index": index}))["Restart"]
+                    X.BUTTON(href=self.url({"action": "restart-frame", "index": index}))["Restart"], " ",
+                    X.BUTTON(href=self.url({"action": "return-frame", "index": index}))["Return…"]
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
@@ -186,7 +188,19 @@ class Debugger(ui.UIView):
             print("DONE")
           except Exception as e:
             print("IE", e)
+        elif action == "return-frame":
+            await slynk.debug_return_from_frame(
+                index, 
+                await util.show_input_panel(
+                    sly.loop, 
+                    self.window, 
+                    f"Return for frame", 
+                    ""),
+                self.data.thread)
+            should_close = True
         else:
+            should_close = True
+        if should_close == True:
             futures[self.future_id].set_result((action, index))
 
 
