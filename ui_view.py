@@ -79,6 +79,9 @@ class UIView:
         self.name = "[destroyed]"
         self.flip()
 
+    def focus(self):
+        self.window.focus_sheet(self.sheet)
+
 
 # Sadly sublime text does support `<sub></sub>`
 def to_subscript_unicode(string):
