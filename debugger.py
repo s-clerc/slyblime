@@ -16,6 +16,7 @@ from . import custom_elements as X
 from . import ui_view as ui
 from . import output_commands
 from .inspector import Inspector
+
 if "futures" not in globals():
     futures = {}
 
@@ -116,7 +117,8 @@ class Debugger(ui.UIView):
                     X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"], " ",
                     X.BUTTON(href=self.url({"action": "locate-frame", "index": index}))["Locate"], " ",
                     X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"], " ",
-                    X.BUTTON(href=self.url({"action": "inspect-frame", "index": index}))["Inspect…"],
+                    X.BUTTON(href=self.url({"action": "inspect-frame", "index": index}))["Inspect…"], " ",
+                    X.BUTTON(href=self.url({"action": "restart-frame", "index": index}))["Restart"]
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
@@ -184,7 +186,6 @@ class Debugger(ui.UIView):
             print("DONE")
           except Exception as e:
             print("IE", e)
-
         else:
             futures[self.future_id].set_result((action, index))
 
