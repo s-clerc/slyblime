@@ -15,7 +15,7 @@ from .html_dsl.elements import *
 from . import custom_elements as X
 from . import ui_view as ui
 from . import output_commands
-
+from .inspector import Inspector
 if "futures" not in globals():
     futures = {}
 
@@ -113,16 +113,17 @@ class Debugger(ui.UIView):
                     ],
                     X.BUTTON(href=self.url({"action": "disassemble-frame", "index": index}))["Disassemble"], " ",
                     X.BUTTON(href=self.url({"action": "locate-frame", "index": index}))["Locate"], " ",
-                    X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"],
+                    X.BUTTON(href=self.url({"action": "eval-frame", "index": index}))["Eval…"], " ",
+                    X.BUTTON(href=self.url({"action": "inspect-frame", "index": index}))["Inspect…"],
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
           except Exception as e:
                 print("AU", e)
         elif action == "frame-describe":
-            self.window.run_command("sly_describe",
+            set_timeout(lambda: self.window.run_command("sly_describe",
                 {"query": self.current_locals[index].value,
-                 "input_source": "given"})
+                 "input_source": "given"}), 10)
         elif action == "disassemble-frame":
             ui.send_result_to_panel(
                 self.window,
@@ -162,6 +163,23 @@ class Debugger(ui.UIView):
                     print("OK  aaa REVER")
                 except Exception as e:
                     print("NAYAY", e)
+        elif action == "inspect-frame":
+          try:
+            print("IV")
+            maybe_inspector = None
+            for maybe_inspector in self.session.inspectors.values():
+                if maybe_inspector.window == self.window:
+                    inspector = maybe_inspector
+                    break
+            inspector = Inspector(self.session, self.window)
+            print(inspector)
+            await inspector.inspect_in_frame(
+                index,
+                self.data.thread)
+            print("DONE")
+          except Exception as e:
+            print("IE", e)
+
         else:
             futures[self.future_id].set_result((action, index))
 

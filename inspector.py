@@ -261,4 +261,23 @@ class Inspector(ui.UIView):
         elif mode == "action":
             await self.call_action(int(index))
 
-
+    async def inspect_in_frame(self, frame_index, thread, expression_string=None):
+      try:
+        if not expression_string:
+            self.html = "System ready...\nEnter evaluee for inspection..."
+            expression_string = await show_input_panel(
+                sly.loop, 
+                self.window, 
+                f"Evaluee for frame", 
+                "")
+        data = await self.slynk.inspect_in_frame(
+            frame_index, 
+            expression_string,
+            thread=thread,
+            current_inspector=self.id,
+            target_inspector=self.id)
+        print("REçU OK", data)
+        self.html = design(self.id, data)
+        self.flip()
+      except Exception as e:
+        print("InspectorInFrame", e)
