@@ -10,6 +10,7 @@ except ImportError as e:
     from structs import *
 
 class Inspector:
+    # not to be confused with `parse_inspection` in util.py
     async def parse_inspection(self, result, *args):
         if not result:
             return None
@@ -43,6 +44,7 @@ class Inspector:
     # Careful, the format for commands here is as a list and not
     # a precomposed string
     async def eval_for_inspector(self, slyfun, *args, 
+                                thread="T",
                                 # Keyword arguments in the original
                                  package=DEFAULT_PACKAGE,
                                  error_message="Inspection Failed",
@@ -62,7 +64,7 @@ class Inspector:
             dumps(target_inspector),
             f"'{slyfun}", 
         ] + [dumps(element) for element in args])
-        result = await self.rex(query, "T", package)
+        result = await self.rex(query, thread, package)
         return result
 
     async def inspect(self, query, current_inspector=None, target_inspector=None, package=DEFAULT_PACKAGE):
@@ -124,14 +126,18 @@ class Inspector:
 
     async def inspect_frame_var(self, frame_index, variable, thread, *args):
         inspection_result = await self.rex(f"SLYNK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
+        result = await parse_inspection(inspection_result, *args)
         return result
 
-    async def inspect_in_frame(self, frame_index, expression_string, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-IN-FRAME {dumps(expression_string)} {str(frame_index)}",
-                                           thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
+    async def inspect_in_frame(self, frame_index, expression_string, thread, target_inspector=None, current_inspector=None):
+        return parse_inspection(
+            await self.eval_for_inspector(
+                "SLYNK:INSPECT-IN-FRAME",
+                expression_string,
+                frame_index,
+                thread=thread,
+                target_inspector=target_inspector,
+                current_inspector=current_inspector))
 
     async def inspect_current_condition(self, thread, *args):
         inspection_result = await self.rex(f"SLYNK:INSPECT-CURRENT-CONDITION", thread, *args)
