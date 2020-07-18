@@ -17,26 +17,11 @@ from . import ui_view as ui
 from . import output_commands
 from .inspector import Inspector
 
-if "futures" not in globals():
-    futures = {}
-
-async def show(session, debug_data):
-    global futures
-    future_id = uuid.uuid4().hex
-    future = session.loop.create_future()
-    futures[future_id] = future
-    view = Debugger(session.window, session, debug_data, future_id)
-    await future
-    session.window.run_command("close")
-    return future.result()
-
 class Debugger(ui.UIView):
-    def __init__(self, window, session, data, future_id):
+    def __init__(self, window, session, thread):
         super().__init__(window, session)
-        self.data = data
-        self.future_id = future_id
-        self.design(data)
-        self.flip()
+        self.session.debuggers[thread] = self
+        self.data = None
         self.current_locals = None
 
     def describe(self, index=None):
@@ -46,12 +31,14 @@ class Debugger(ui.UIView):
                 f"Level: {self.data.level}\n"
                 f"Frame: {self.data.stack_frames[index].description if index is not None else 'unspecified here'}")
 
-    def design(self, data):
+    def update(self, data):
+        self.current_locals = None
+        self.data = data
         affixes = sly.settings().get("debugger")["view_title_affixes"]
         self.name = affixes[0] + str(data.level) + affixes[1]
         affixes = sly.settings().get("debugger")["header_affixes"]
-        self.html = HTML[BODY(_class="sly sly-debugger")[
 
+        self.html = HTML[BODY(_class="sly sly-debugger")[
             STYLE[util.load_resource("stylesheet.css")],
             H1[escape(affixes[0]+str(data.level)+affixes[1])],
             H2[escape(data.title)],
@@ -88,12 +75,14 @@ class Debugger(ui.UIView):
                     ]
                 ]
             ]]
+        self.flip()
 
     async def on_url_press(self, action, index=None, **rest):
+      try:
+        print("start")
         index = int(index) if index is not None else None
         action = action.lower()
         slynk = self.session.slynk
-        should_close = False
         if action == "frame":
           try:
             element = self.html.get_element_by_id(f"frame-{index}")[0]
@@ -197,11 +186,25 @@ class Debugger(ui.UIView):
                     f"Return for frame", 
                     ""),
                 self.data.thread)
-            should_close = True
-        else:
-            should_close = True
-        if should_close == True:
-            futures[self.future_id].set_result((action, index))
+        elif action == "restart":
+            await slynk.debug_invoke_restart(self.data.level, index, self.data.thread)
+        elif action == "restart-frame":
+            await slynk.debug_restart_frame(index, self.data.thread)
+      except Exception as e:
+        print("UrlError", e)
 
+    def returned(self, data):
+      try:
+        self.html = HTML[BODY(_class="sly sly-debugger")[
+            STYLE[util.load_resource("stylesheet.css")],
+            f"Debugger for thread {data.thread}, no current condition being debugged."
+        ]]
+        self.flip()
+        # We wait a small duration to see 
+        # if there are still errors for the thread
+        self.data = None
+        set_timeout(lambda: (self.window.run_command("close") if self.data == None else None), 30)
+      except Exception as e:
+        print("return failure", e)
 
 

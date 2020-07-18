@@ -4,7 +4,7 @@ import sublime_plugin, threading, asyncio  # import the required modules
 from operator import itemgetter
 
 from . import util, sexpdata, debugger
-
+from .debugger import Debugger
 from .slynk import slynk
 
 import logging
@@ -45,6 +45,7 @@ class SlynkSession:
                         y_or_n_p=self.on_y_or_n)
         self.inspectors = {}
         self.nearest_inspector = None
+        self.debuggers = {}
         self.id: SessionId = None
 
     async def connect(self):
@@ -62,20 +63,29 @@ class SlynkSession:
         self.window.status_message("SLYNK connexion lost")
         print("SLYNK connexion lost")
 
-    async def on_debug_setup(self, debug_data):
+    async def on_debug_setup(self, data):
         print("run")
-        (action, index) = await debugger.show(self, debug_data)
+        if data.thread in self.debuggers:
+            debugger = self.debuggers[data.thread]
+        else:
+            debugger = Debugger(self.window, self, data.thread)
+        debugger.update(data)
+
+        (action, index) = await debugger.show(self, data)
         if action == "restart":
-            await self.slynk.debug_invoke_restart(debug_data.level, index, debug_data.thread)
+            await self.slynk.debug_invoke_restart(data.level, index, data.thread)
         elif action == "restart-frame":
-            await self.slynk.debug_restart_frame(index, debug_data.thread)
+            await self.slynk.debug_restart_frame(index, data.thread)
         #(action, index)
 
-    def on_debug_activate(self, *args):
-        print(f":activate {args}")
+    def on_debug_activate(self, data):
+        debugger = self.debuggers[data.thread]
+        if not debugger.is_open:
+            debugger.reöpen(self.window)
+        debugger.focus()
 
-    def on_debug_return(self, *args):
-        print(f":return {args}")
+    def on_debug_return(self, data):
+        self.debuggers[data.thread].returned(data)
 
     async def on_read_from_minibuffer(self, prompt, initial_value, future):
         initial_value = initial_value if initial_value else ""
