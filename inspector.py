@@ -281,3 +281,15 @@ class Inspector(ui.UIView):
         self.flip()
       except Exception as e:
         print("InspectorInFrame", e)
+
+    async def inspect_current_condition(self, thread):
+      try:
+        data = await self.slynk.inspect_current_condition(
+            thread=thread,
+            current_inspector=self.id,
+            target_inspector=self.id)
+        print("REçU OK", data)
+        self.html = design(self.id, data)
+        self.flip()
+      except Exception as e:
+        print("InspectorOfFrame", e)

@@ -50,10 +50,12 @@ class Debugger(ui.UIView):
         self.name = affixes[0] + str(data.level) + affixes[1]
         affixes = sly.settings().get("debugger")["header_affixes"]
         self.html = HTML[BODY(_class="sly sly-debugger")[
+
             STYLE[util.load_resource("stylesheet.css")],
             H1[escape(affixes[0]+str(data.level)+affixes[1])],
             H2[escape(data.title)],
             H3[escape(data.type), " in thread ", escape(str(data.thread))],
+            X.BUTTON(href=self.url({"action": "inspect-condition"}))["Inspect condition"], " ",
             H4["Restarts"],
             (restarts := OL(start="0")),
             H4["Backtrace"],
@@ -86,8 +88,8 @@ class Debugger(ui.UIView):
                 ]
             ]]
 
-    async def on_url_press(self, action, index, **rest):
-        index = int(index)
+    async def on_url_press(self, action, index=None, **rest):
+        index = int(index) if index is not None else None
         action = action.lower()
         slynk = self.session.slynk
         if action == "frame":
@@ -163,7 +165,7 @@ class Debugger(ui.UIView):
                     print("OK  aaa REVER")
                 except Exception as e:
                     print("NAYAY", e)
-        elif action == "inspect-frame":
+        elif "inspect" in action:
           try:
             print("IV")
             maybe_inspector = None
@@ -173,9 +175,12 @@ class Debugger(ui.UIView):
                     break
             inspector = Inspector(self.session, self.window)
             print(inspector)
-            await inspector.inspect_in_frame(
-                index,
-                self.data.thread)
+            if action == "inspect-frame":
+                await inspector.inspect_in_frame(
+                    index,
+                    self.data.thread)
+            elif action == "inspect-condition":
+                await inspector.inspect_current_condition(self.data.thread)
             print("DONE")
           except Exception as e:
             print("IE", e)

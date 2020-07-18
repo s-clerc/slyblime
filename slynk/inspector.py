@@ -139,10 +139,13 @@ class Inspector:
                 target_inspector=target_inspector,
                 current_inspector=current_inspector))
 
-    async def inspect_current_condition(self, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-CURRENT-CONDITION", thread, *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
+    async def inspect_current_condition(self, thread, target_inspector=None, current_inspector=None):
+        return parse_inspection(
+            await self.eval_for_inspector(
+                "SLYNK:INSPECT-CURRENT-CONDITION",
+                thread=thread,
+                target_inspector=target_inspector,
+                current_inspector=current_inspector))
 
     async def inspect_nth_part(self, n, *args):
         inspection_result = await self.rex(f"SLYNK:INSPECT-NTH-PART {str(n)}", ":REPL-THREAD", *args)
