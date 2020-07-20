@@ -6,7 +6,7 @@ from operator import itemgetter
 from . import util, sexpdata, debugger
 from .debugger import Debugger
 from .slynk import slynk
-
+from .tracer import Tracer
 import logging
 import functools
 from typing import *
@@ -30,7 +30,6 @@ class SlynkSession:
     Inspectors, REPLs etc are all stored here
     """
     def __init__(self, host, port, window, loop) -> None:
-        super().__init__()
         self.slynk = slynk.SlynkClient(host, port)
         self.window = window
         self.repl_views = {}
@@ -46,6 +45,7 @@ class SlynkSession:
         self.inspectors = {}
         self.nearest_inspector = None
         self.debuggers = {}
+        self.tracer = None
         self.id: SessionId = None
 
     async def connect(self):
