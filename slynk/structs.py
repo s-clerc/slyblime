@@ -107,6 +107,7 @@ class CompilationNote:
     references: list = None
     source_context: Any = None
 
+
 @dataclass
 class CompilationResult:
     notes: List[CompilationNote]
@@ -115,3 +116,20 @@ class CompilationResult:
     load: bool
     path: str
     # type which is always :compilation-result
+
+
+@dataclass
+class Trace:
+    id: int
+    parent_id: int
+    spec: Tuple[str, str] = None
+    arguments: List[str] = None
+    return_list: List[str] = None
+    # Haven't seen any of the properties below actually sent
+    depth: int = None
+    beginning: Any = None
+    end: Any = None
+    collapse_button_marker: Any = None
+    summary_beginning: Any = None
+    children_end: Any = None
+    is_collapsed: Any = None
