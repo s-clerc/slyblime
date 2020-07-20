@@ -75,3 +75,19 @@
 .sly-inspector-label {
     font-style: italic;
 }
+
+.sly .title {
+    font-size: 1.3rem;
+}
+
+.sly .toolbar {
+    margin: 1rem;
+}
+
+.sly .icon-button {
+    font-size: 1.5rem;
+}
+
+.list-element {
+    margin-left:  3rem;
+}

@@ -103,5 +103,9 @@
         "args": {
             "mode": "function"
         }
+    },
+    {
+        "caption": "Sly: Open tracer",
+        "command": "sly_open_tracer"
     }
 ]
