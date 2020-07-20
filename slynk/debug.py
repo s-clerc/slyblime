@@ -1,4 +1,5 @@
 import asyncio, threading, pathlib
+from typing import *
 
 try:
     from .util import *
@@ -126,3 +127,43 @@ class Debug:
     async def debug_break(self, function_name, thread, *args):
         result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", thread, *args)
         return result
+
+# For the trace dialog:
+
+    async def tracer_toggle(self, function_name, *args) -> str:
+        result = await self.rex(
+            f"slynk-trace-dialog:dialog-toggle-trace (slynk::from-string {dumps(function_name)})",
+            *args)
+        return result
+
+    async def tracer_untrace(self, function_name, *args):
+        result = await self.rex(
+            f"slynk-trace-dialog:dialog-untrace '{function_name}",
+            *args)
+        return result
+
+    async def tracer_untrace_all(self, *args) -> Tuple[str, str]:
+        result = await self.rex("slynk-trace-dialog:dialog-untrace-all", *args)
+        return [(spec[0], str(spec[2])) for spec in result]
+
+    async def tracer_report_specs(self, *args) -> Tuple[str, str]:
+        result = await self.rex("slynk-trace-dialog:report-specs", *args)
+        return [(spec[0], str(spec[2])) for spec in result]
+
+    async def tracer_report_total(self, *args) -> int:
+        result = await self.rex("slynk-trace-dialog:report-total", *args)
+        return result       
+
+    async def tracer_clear(self, *args):
+        result = await self.rex("slynk-trace-dialog:clear-trace-tree", *args)
+        return result       
+
+    async def tracer_report_partial_tree(self, key, *args) -> Tuple[List[Trace], int, str]:
+        results = await self.rex(f"slynk-trace-dialog:report-partial-tree '{key}", *args)
+        traces = [Trace(result[0], result[1],
+                        (result[2][0], str(result[2][2])),
+                        [argument[1] for argument in result[3]],
+                        [returnee[1] for returnee in result[4]],
+                        *result[5:])
+                   for result in results[0]]
+        return (traces, results[1], str(results[2]))
