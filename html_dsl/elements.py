@@ -86,6 +86,8 @@ class BaseHtmlElement(list):
 
     def __str__(self):
         blank = "" * self.level
+        if "hidden" in self.attributes:
+            return ""
         attributes = " {}".format(" ".join(f"""{key.replace("_", "-")}='{str(self.attributes[key])}'""" for key in self.attributes)) if self.attributes else ""
         children = "".join(str(child) if isinstance(child, BaseHtmlElement) else blank + str(child) for child in self)        
         if self.single:
