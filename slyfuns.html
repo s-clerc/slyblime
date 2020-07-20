@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+  <meta charset=UTF-8>
+  <title>Slyfun API</title>
+  <style>
+    tr, td {
+      border-bottom: 1px solid #ddd;
+    }
+
+    td:nth-child(3n+1) {
+      min-width: 20em;
+      font-family: monospace;
+    }
+    td:nth-child(3n+2) {
+      min-width: 30em;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+<h1> Slyfun documentation </h1>
+  <table><tr><td>Function Name<td>Lambda List<td>Documentation<tr><td>INSPECTOR-NEXT<td>∅<td>Inspect the next element in the history of inspected objects..<tr><td>UNINTERN-SYMBOL<td>(NAME PACKAGE)<td><tr><td>SLYNK-MACROEXPAND-ALL<td>(STRING)<td><tr><td>DESCRIBE-INSPECTOR-PART<td>(INDEX)<td>Describe part INDEX of the currently inspected object.<tr><td>DESCRIBE-SYMBOL<td>(SYMBOL-NAME)<td><tr><td>SLY-DB-OUT<td>(FRAME)<td><tr><td>UNTRACE-ALL<td>∅<td><tr><td>TOGGLE-DEBUG-ON-SLYNK-ERROR<td>∅<td><tr><td>SLYNK-TOGGLE-TRACE<td>(SPEC-STRING)<td><tr><td>COMMIT-EDITED-VALUE<td>(FORM VALUE)<td>Set the value of a setf'able FORM to VALUE.
+FORM and VALUE are both strings from Emacs.<tr><td>OPERATOR-ARGLIST<td>(NAME PACKAGE)<td><tr><td>INSPECTOR-EVAL<td>(STRING)<td><tr><td>INSPECTOR-NTH-PART<td>(INDEX)<td>Return the current inspector's INDEXth part.
+The second value indicates if that part exists at all.<tr><td>EVAL-AND-GRAB-OUTPUT<td>(STRING)<td><tr><td>SLY-DB-CONTINUE<td>∅<td><tr><td>QUIT-THREAD-BROWSER<td>∅<td><tr><td>FRAME-LOCALS-AND-CATCH-TAGS<td>(INDEX)<td>Return a list (LOCALS TAGS) for vars and catch tags in the frame INDEX.
+LOCALS is a list of the form ((&amp;key NAME ID VALUE) ...).
+TAGS has is a list of strings.<tr><td>INSPECT-NTH-PART<td>(INDEX)<td><tr><td>SLY-DB-NEXT<td>(FRAME)<td><tr><td>SLYNK-COMPILER-MACROEXPAND-1<td>(STRING)<td><tr><td>INSPECTOR-REINSPECT<td>∅<td><tr><td>INTERACTIVE-EVAL<td>(STRING)<td><tr><td>DESCRIBE-INSPECTEE<td>∅<td>Describe the currently inspected object.<tr><td>SET-PACKAGE<td>(NAME)<td>Set *package* to the package named NAME.
+Return the full package-name and the string to use in the prompt.<tr><td>THROW-TO-TOPLEVEL<td>∅<td>Invoke the ABORT-REQUEST restart abort an RPC from Emacs.
+If we are not evaluating an RPC then ABORT instead.<tr><td>QUIT-INSPECTOR<td>∅<td><tr><td>INSPECT-CURRENT-CONDITION<td>∅<td><tr><td>SLYNK-REQUIRE<td>(MODULES)<td>Load each module in MODULES.
+
+MODULES is a list of strings designators or a single string
+designator. Returns a list of all modules available.<tr><td>PPRINT-FRAME-VAR<td>(FRAME VAR)<td><tr><td>VALUE-FOR-EDITING<td>(FORM)<td>Return a readable value of FORM for editing in Emacs.
+FORM is expected, but not required, to be SETF'able.<tr><td>DESCRIBE-FRAME-VAR<td>(FRAME VAR)<td><tr><td>SLYNK-EXPAND-1<td>(STRING)<td><tr><td>SLY-DB-BREAK<td>(NAME)<td><tr><td>INSPECTOR-TOGGLE-VERBOSE<td>∅<td>Toggle verbosity of inspected object.<tr><td>DEBUG-NTH-THREAD<td>(INDEX)<td><tr><td>TOGGLE-BREAK-ON-SIGNALS<td>∅<td><tr><td>INSPECT-IN-FRAME<td>(STRING INDEX)<td><tr><td>INSPECT-FRAME-VAR<td>(FRAME VAR)<td><tr><td>MOP<td>(TYPE SYMBOL-NAME)<td>Return info about classes using mop.
+
+    When type is:
+     :subclasses - return the list of subclasses of class.
+     :superclasses - return the list of superclasses of class.<tr><td>INTERACTIVE-EVAL-REGION<td>(STRING)<td><tr><td>INVOKE-NTH-RESTART<td>(INDEX)<td><tr><td>COMPILE-MULTIPLE-STRINGS-FOR-EMACS<td>(STRINGS POLICY)<td>Compile STRINGS (exerpted from BUFFER at POSITION).
+Record compiler notes signalled as `compiler-condition's.<tr><td>SIMPLE-BREAK<td>(&OPTIONAL DATUM &REST ARGS)<td><tr><td>UNDEFINE-FUNCTION<td>(FNAME-STRING)<td><tr><td>APROPOS-LIST-FOR-EMACS<td>(PATTERN &OPTIONAL EXTERNAL-ONLY CASE-SENSITIVE PACKAGE)<td>Make an apropos search for Emacs.
+The result is a list of property lists.<tr><td>UPDATE-INDENTATION-INFORMATION<td>∅<td><tr><td>SIMPLE-COMPLETIONS<td>(PREFIX PACKAGE)<td>Return a list of completions for the string PREFIX.<tr><td>SLYNK-MACROEXPAND-1<td>(STRING)<td><tr><td>SLYNK-MACROEXPAND<td>(STRING)<td><tr><td>DESCRIBE-FUNCTION<td>(NAME)<td><tr><td>RE-EVALUATE-DEFVAR<td>(FORM)<td><tr><td>FRAME-PACKAGE-NAME<td>(FRAME)<td><tr><td>INSPECTOR-POP<td>∅<td>Inspect the previous object.
+Return nil if there's no previous object.<tr><td>XREF<td>(TYPE NAME)<td><tr><td>SLY-DB-BREAK-WITH-DEFAULT-DEBUGGER<td>(DONT-UNWIND)<td>Invoke the default debugger.<tr><td>KILL-NTH-THREAD<td>(INDEX)<td><tr><td>SLYNK-DELETE-PACKAGE<td>(PACKAGE-NAME)<td><tr><td>INIT-INSPECTOR<td>(STRING)<td><tr><td>FLOW-CONTROL-TEST<td>(N DELAY)<td><tr><td>SLY-DB-ABORT<td>∅<td><tr><td>XREFS<td>(TYPES NAME)<td><tr><td>PPRINT-INSPECTOR-PART<td>(INDEX)<td>Pretty-print part INDEX of the currently inspected object.<tr><td>ED-IN-EMACS<td>(&OPTIONAL WHAT)<td>Edit WHAT in Emacs.
+
+WHAT can be:
+  A pathname or a string,
+  A list (PATHNAME-OR-STRING &amp;key LINE COLUMN POSITION),
+  A function name (symbol or cons),
+  NIL. <tr><td>FIND-DEFINITION-FOR-THING<td>(THING)<td><tr><td>INSPECTOR-HISTORY<td>∅<td><tr><td>DISASSEMBLE-FORM<td>(FORM)<td><tr><td>EVAL-STRING-IN-FRAME<td>(STRING FRAME PACKAGE)<td><tr><td>BACKTRACE<td>(START END)<td>Return a list ((I FRAME PLIST) ...) of frames from START to END.
+
+I is an integer, and can be used to reference the corresponding frame
+from Emacs; FRAME is a string representation of an implementation's
+frame.<tr><td>FIND-DEFINITIONS-FOR-EMACS<td>(NAME)<td>Return a list ((DSPEC LOCATION) ...) of definitions for NAME.
+DSPEC is a string and LOCATION a source location. NAME is a string.<tr><td>INVOKE-NTH-RESTART-FOR-EMACS<td>(SLY-DB-LEVEL N)<td>Invoke the Nth available restart.
+SLY-DB-LEVEL is the debug level when the request was made. If this
+has changed, ignore the request.<tr><td>INSPECTOR-RANGE<td>(FROM TO)<td><tr><td>INSPECTOR-NTH-PART-OR-LOSE<td>(INDEX)<td>Return the current inspector's INDEXth part.
+The second value indicates if that part exists at all.<tr><td>SLY-DB-RETURN-FROM-FRAME<td>(INDEX STRING)<td><tr><td>DEBUGGER-INFO-FOR-EMACS<td>(START END)<td>Return debugger state, with stack frames from START to END.
+The result is a list:
+  (condition ({restart}*) ({stack-frame}*) (cont*))
+where
+  condition   ::= (description type [extra])
+  restart     ::= (name description)
+  stack-frame ::= (number description [plist])
+  extra       ::= (:references and other random things)
+  cont        ::= continutation
+  plist       ::= (:restartable {nil | t | :unknown})
+
+condition---a pair of strings: message, and type.  If show-source is
+not nil it is a frame number for which the source should be displayed.
+
+restart---a pair of strings: restart name, and description.
+
+stack-frame---a number from zero (the top), and a printed
+representation of the frame's call.
+
+continutation---the id of a pending Emacs continuation.
+
+Below is an example return value. In this case the condition was a
+division by zero (multi-line description), and only one frame is being
+fetched (start=0, end=1).
+
+ (("Arithmetic error DIVISION-BY-ZERO signalled.
+Operation was KERNEL::DIVISION, operands (1 0)."
+   "[Condition of type DIVISION-BY-ZERO]")
+  (("ABORT" "Return to Sly toplevel.")
+   ("ABORT" "Return to Top-Level."))
+  ((0 "(KERNEL::INTEGER-/-INTEGER 1 0)" (:restartable nil)))
+  (4))<tr><td>DOCUMENTATION-SYMBOL<td>(SYMBOL-NAME)<td><tr><td>SLYNK-EXPAND<td>(STRING)<td><tr><td>SLY-DB-STEP<td>(FRAME)<td><tr><td>LOAD-FILE<td>(FILENAME)<td><tr><td>COMPILE-FILE-IF-NEEDED<td>(FILENAME LOADP)<td><tr><td>INSPECTOR-CALL-NTH-ACTION<td>(INDEX &REST ARGS)<td><tr><td>COMPILE-FILE-FOR-EMACS<td>(FILENAME LOAD-P &REST OPTIONS)<td>Compile FILENAME and, when LOAD-P, load the result.
+Record compiler notes signalled as `compiler-condition's.<tr><td>SLYNK-FORMAT-STRING-EXPAND<td>(STRING)<td><tr><td>SLYNK-ADD-LOAD-PATHS<td>(PATHS)<td><tr><td>COMPILE-STRING-FOR-EMACS<td>(STRING BUFFER POSITION FILENAME POLICY)<td>Compile STRING (exerpted from BUFFER at POSITION).
+Record compiler notes signalled as `compiler-condition's.<tr><td>CONNECTION-INFO<td>∅<td>Return a key-value list of the form:
+(&amp;key PID STYLE LISP-IMPLEMENTATION MACHINE FEATURES PACKAGE VERSION)
+PID: is the process-id of Lisp process (or nil, depending on the STYLE)
+STYLE: the communication style
+LISP-IMPLEMENTATION: a list (&amp;key TYPE NAME VERSION PROGRAM)
+FEATURES: a list of keywords
+PACKAGE: a list (&amp;key NAME PROMPT)
+VERSION: the protocol version<tr><td>FLEX-COMPLETIONS<td>(PATTERN PACKAGE-NAME &KEY LIMIT)<td>Compute "flex" completions for PATTERN given current PACKAGE-NAME.
+Returns a list of (COMPLETIONS NIL). COMPLETIONS is a list of
+(STRING SCORE CHUNKS CLASSIFICATION-STRING).<tr><td>LIST-THREADS<td>∅<td>Return a list (LABELS (ID NAME STATUS ATTRS ...) ...).
+LABELS is a list of attribute names and the remaining lists are the
+corresponding attribute values per thread.
+Example:
+  ((:id :name :status :priority)
+   (6 "slynk-indentation-cache-thread" "Semaphore timed wait" 0)
+   (5 "reader-thread" "Active" 0)
+   (4 "control-thread" "Semaphore timed wait" 0)
+   (2 "Slynk Sentinel" "Semaphore timed wait" 0)
+   (1 "listener" "Active" 0)
+   (0 "Initial" "Sleep" 0))<tr><td>SDLB-PRINT-CONDITION<td>∅<td><tr><td>SLY-DB-DISASSEMBLE<td>(INDEX)<td><tr><td>DESCRIBE-DEFINITION-FOR-EMACS<td>(NAME KIND)<td><tr><td>PPRINT-EVAL-STRING-IN-FRAME<td>(STRING FRAME PACKAGE)<td><tr><td>LIST-ALL-PACKAGE-NAMES<td>(&OPTIONAL NICKNAMES)<td>Return a list of all package names.
+Include the nicknames if NICKNAMES is true.<tr><td>PING<td>(TAG)<td><tr><td>PPRINT-EVAL<td>(STRING)<td><tr><td>SLYNK-COMPILER-MACROEXPAND<td>(STRING)<td><tr><td>EVAL-FOR-INSPECTOR<td>(CURRENT TARGET SLAVE-SLYFUN &REST ARGS)<td>Call SLAVE-SLYFUN with ARGS in CURRENT inspector, open in TARGET.<tr><td>INSPECT-IN-EMACS<td>(WHAT &KEY WAIT)<td>Inspect WHAT in Emacs. If WAIT is true (default NIL) blocks until the
+inspector has been closed in Emacs.<tr><td>FIND-SOURCE-LOCATION-FOR-EMACS<td>(SPEC)<td><tr><td>IO-SPEED-TEST<td>(&OPTIONAL N M)<td><tr><td>START-SLYNK-SERVER-IN-THREAD<td>(INDEX PORT-FILE-NAME)<td>Interrupt the INDEXth thread and make it start a slynk server.
+The server port is written to PORT-FILE-NAME.</table></body></html>
