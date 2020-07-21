@@ -39,10 +39,11 @@ def render_as_tree(data):
                 prefixes.pop()
             else:
                 break
-        result.append([str(vertex.id).rjust(width).replace(" ", SP), 
-                       *prefixes[1:-1], 
-                      SP + SP + "├─ ", 
-                      escape(vertex.spec[0])])
+        result.append(
+            [str(vertex.id).rjust(width).replace(" ", SP), 
+             *prefixes[1:-1], 
+             SP + SP + "├─ ", 
+             SPAN(_class="function-name")[escape(vertex.spec[0])]])
         if len(prefixes) > 1:
             prefixes[-1].value = 2 * SP + "│" + SP
             prefixes[-1] = Reference(4 * SP)

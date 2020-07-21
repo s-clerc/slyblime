@@ -88,6 +88,10 @@
     font-size: 1.5rem;
 }
 
-.list-element {
+.sly .list-element {
     margin-left:  3rem;
+}
+
+.sly .function-name {
+    font-size: 1.1rem;
 }
