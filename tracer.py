@@ -13,7 +13,7 @@ from .util import *
 from .html_dsl.elements import *
 from . import custom_elements as X
 from html import escape
-
+from .inspector import get_inspector
 # To enable passing strings by reference
 @dataclass
 class Reference:
@@ -24,38 +24,6 @@ class Reference:
 SP = "&nbsp;"
 NL = "<br>"
 
-
-def render_as_tree(data):
-    # To number each call
-    width = ceil(log(data[-1].id, 10)) + 2
-    prefixes = [SP * width]
-    previous_ids = []
-    result: List[List[str]] = []
-
-    for vertex in data:
-        for previous_id in reversed(previous_ids):
-            if previous_id != vertex.parent_id:
-                previous_ids.pop()
-                prefixes.pop()
-            else:
-                break
-        result.append(
-            [str(vertex.id).rjust(width).replace(" ", SP), 
-             *prefixes[1:-1], 
-             SP + SP + "├─ ", 
-             SPAN(_class="function-name")[escape(vertex.spec[0])]])
-        if len(prefixes) > 1:
-            prefixes[-1].value = 2 * SP + "│" + SP
-            prefixes[-1] = Reference(4 * SP)
-        prefixes += [Reference(2 * SP + "┃" + SP)]
-        inputs = [[*prefixes, "🠆 ", escape(input)] for input in vertex.arguments]
-        outputs = [[*prefixes, "⤆ ", escape(output)] for output in vertex.return_list]
-        result += inputs + outputs
-        prefixes[-1] = Reference(SP * 4)
-        previous_ids.append(vertex.id)
-
-    return NL.join(["".join([str(reference) for reference in resultee]) 
-                                     for resultee in result])
 
 class SlyOpenTracerCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
@@ -161,12 +129,12 @@ class Tracer(ui.UIView):
                 f"sublime-sly-tracer-{self.id}")
             self.traces += traces
             print(traces)
-            self.output_element[0] += render_as_tree(traces)
+            self.output_element[0] += self.render_as_tree(traces)
 
     async def erase_output(self):
         self.output_element[0] = " "
 
-    async def on_url_press(self, action, index=None, **rest):
+    async def on_url_press(self, action, index=None, trace_id=None, term_index=None, is_input_value=None, **rest):
       print("HI37")
       print(action)
       try:
@@ -191,11 +159,55 @@ class Tracer(ui.UIView):
             await self.fetch()
         #TEMP REMOVE BELOW WHEN POSSIBLE
         elif action == "refresh-output" and len(self.traces) > 0:
-            self.output_element[0] = render_as_tree(self.traces)
-            
+            self.output_element[0] = self.render_as_tree(self.traces)
+        elif action == "inspect":
+            inspector = get_inspector(self.session, self.window, switch=True)
+            await inspector.inspect_trace(trace_id, term_index, is_input_value)
+
+
         if action in ["refresh-output", "fetch-all", "fetch-next", "delete-output"]:
             self.total_traces = await self.slynk.tracer_report_total()
             self.total_element[0] = f"{len(self.traces)}/{self.total_traces}"
         self.flip()
       except Exception as e:
         print("OUPE", e)
+
+    def prepare_terms(self, terms, prefixes, arrow, id, is_input_value):
+        return [
+                [*prefixes, 
+                 arrow, 
+                 A(_class="term", href=self.url({"action": "inspect", "trace_id": id, "term_index": i, "is_input_value": is_input_value}))[
+                    escape(term)]]
+            for i, term in enumerate(terms)]
+
+    def render_as_tree(self, data):
+        # To number each call
+        width = ceil(log(data[-1].id, 10)) + 2
+        prefixes = [SP * width]
+        previous_ids = []
+        result: List[List[str]] = []
+
+        for vertex in data:
+            for previous_id in reversed(previous_ids):
+                if previous_id != vertex.parent_id:
+                    previous_ids.pop()
+                    prefixes.pop()
+                else:
+                    break
+            result.append(
+                [str(vertex.id).rjust(width).replace(" ", SP), 
+                 *prefixes[1:-1], 
+                 SP + SP + "├─ ", 
+                 SPAN(_class="function-name")[escape(vertex.spec[0])]])
+            if len(prefixes) > 1:
+                prefixes[-1].value = 2 * SP + "│" + SP
+                prefixes[-1] = Reference(4 * SP)
+            prefixes += [Reference(2 * SP + "┃" + SP)]
+            inputs = self.prepare_terms(vertex.arguments, prefixes, "🠆 ", vertex.id, True)
+            outputs = self.prepare_terms(vertex.return_list, prefixes, "⤆ ", vertex.id, False)
+            result += inputs + outputs
+            prefixes[-1] = Reference(SP * 4)
+            previous_ids.append(vertex.id)
+
+        return NL.join(["".join([str(reference) for reference in resultee]) 
+                                         for resultee in result])

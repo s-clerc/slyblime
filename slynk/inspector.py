@@ -147,22 +147,9 @@ class Inspector:
                 target_inspector=target_inspector,
                 current_inspector=current_inspector))
 
-    async def inspect_nth_part(self, n, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-NTH-PART {str(n)}", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_call_action(self, n, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECTOR-CALL-NTH-ACTION {str(n)}", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_previous_object(self, *args):
-        inspection_result = await self.rex("SLYNK:INSPECTOR-POP", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
-
-    async def inspect_next_object(self, *args):
-        inspection_result = await self.rex("SLYNK:INSPECTOR-NEXT", ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
-        return result
+    async def inspect_trace(self, trace_id, element_id, is_input_value=True, target_inspector=None, current_inspector=None):
+        return parse_inspection(
+            await self.eval_for_inspector(
+                f"slynk-trace-dialog:inspect-trace-part {trace_id} {element_id} {':arg' if is_input_value else ':retval'}",
+                target_inspector=target_inspector,
+                current_inspector=current_inspector))
