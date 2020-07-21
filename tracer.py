@@ -161,7 +161,7 @@ class Tracer(ui.UIView):
                 f"sublime-sly-tracer-{self.id}")
             self.traces += traces
             print(traces)
-            self.output_element[0] = render_as_tree(self.traces)
+            self.output_element[0] += render_as_tree(traces)
 
     async def erase_output(self):
         self.output_element[0] = " "
@@ -170,8 +170,12 @@ class Tracer(ui.UIView):
       print("HI37")
       print(action)
       try:
-        if "untrace" in action or action == "refresh-tracees":
-            if "all" in action:
+        if "untrace" in action or action in ["refresh-tracees", "add-new"]:
+            if action == "add-new":
+                self.window.status_message(
+                    await self.slynk.tracer_trace(
+                        await show_input_panel(loop, self.window, "Function for tracing", "")))
+            elif "all" in action:
                 await self.slynk.tracer_untrace_all(self.tracees[index][1])
             elif index:
                 await self.slynk.tracer_untrace(self.tracees[index][1])
@@ -185,7 +189,10 @@ class Tracer(ui.UIView):
             await self.fetch("all")
         elif action == "fetch-next":
             await self.fetch()
-
+        #TEMP REMOVE BELOW WHEN POSSIBLE
+        elif action == "refresh-output" and len(self.traces) > 0:
+            self.output_element[0] = render_as_tree(self.traces)
+            
         if action in ["refresh-output", "fetch-all", "fetch-next", "delete-output"]:
             self.total_traces = await self.slynk.tracer_report_total()
             self.total_element[0] = f"{len(self.traces)}/{self.total_traces}"
