@@ -136,6 +136,12 @@ class Debug:
             *args)
         return result
 
+    async def tracer_trace(self, function_name, *args) -> str:
+        result = await self.rex(
+            f"slynk-trace-dialog:dialog-trace (slynk::from-string {dumps(function_name)})",
+            *args)
+        return result
+
     async def tracer_untrace(self, function_name, *args):
         result = await self.rex(
             f"slynk-trace-dialog:dialog-untrace '{function_name}",
