@@ -18,33 +18,32 @@ from datetime import datetime
 from . import ui_view as ui
 from . import pydispatch
 
+def get_inspector(session, window, not_open=False, switch=False):
+    recent_inspectors = sorted(
+        session.inspectors.values(),
+        key=lambda i: i.last_modified,
+        reverse=True)
+    for i, inspector in enumerate(recent_inspectors):
+        if not_open and inspector.is_open:
+            continue
+        if not inspector.is_open:
+            inspector.reöpen(window)
+        if switch:
+            window.focus_sheet(inspector.sheet)
+        return inspector
+    # No closed inspector is avaliable in pool
+    return Inspector(session, window)
 
-async def async_run(session, window, **kwargs):
-    not_open = kwargs["not_open"] if "not_open" in kwargs else False
-    switch = kwargs["switch"] if "switch" in kwargs else False
+
+async def async_run(session, window, query=None, **kwargs):
     try:
-        expression = await show_input_panel(
-            session.loop, window,
-            "Evaluee for inspection:",
-            "")
-        recent_inspectors = sorted(
-            session.inspectors.values(),
-            key=lambda i: i.last_modified,
-            reverse=True)
-        done = False
-        for i, inspector in enumerate(recent_inspectors):
-            if not_open and inspector.is_open:
-                continue
-            if not inspector.is_open:
-                inspector.reöpen(window)
-            if switch:
-                window.focus_sheet(inspector.sheet)
-            done = True
-            await inspector.inspect(expression)
-        # No closed inspector is avaliable in pool
-        if not done:
-            Inspector(session, window, expression)
-
+        if query is None:
+            query = await show_input_panel(
+                session.loop, window,
+                "Evaluee for inspection:",
+                "")
+        inspector = get_inspector(session, window, **kwargs)
+        await inspector.inspect(query)
     except Exception as e:
         print(f"InspectCommandException {e}")
 
@@ -293,3 +292,15 @@ class Inspector(ui.UIView):
         self.flip()
       except Exception as e:
         print("InspectorOfFrame", e)
+
+    async def inspect_trace(self, *args):
+      try:
+        data = await self.slynk.inspect_trace(
+            *args,
+            current_inspector=self.id,
+            target_inspector=self.id)
+        print("IN PA OK", data)
+        self.html = design(self.id, data)
+        self.flip()
+      except Exception as e:
+        print("InspectorOfFTrace", e)     

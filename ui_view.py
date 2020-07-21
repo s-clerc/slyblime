@@ -20,7 +20,7 @@ class SlyUrlCommand(sublime_plugin.WindowCommand):
 
     async def async_run(self, **q):
       try:
-        view = VIEWS[q["id"]]
+        view = VIEWS[q["__id"]]
         await view.on_url_press(**q)
       except e as Exception:
         print(e)
@@ -70,7 +70,7 @@ class UIView:
         return self.sheet.window() is not None
 
     def url(self, parameters):
-        parameters["id"] = self.id
+        parameters["__id"] = self.id
         return f"subl:sly_url {json.dumps(parameters)}"
 
     def destroy(self):
@@ -104,7 +104,7 @@ def to_subscript_unicode(string):
 
 
 def url(id, parameters):
-    parameters["id"] = id
+    parameters["__id"] = id
     return f"subl:sly_url {json.dumps(parameters)}"
 
 """
