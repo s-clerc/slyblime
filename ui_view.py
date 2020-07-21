@@ -30,6 +30,7 @@ class UIView:
     def __init__ (self, window, session):
       try:
         global VIEWS
+        self._name = "UIView"
         self.session = session
         self.slynk = session.slynk
         self.html = "System ready..."
@@ -63,7 +64,7 @@ class UIView:
         del self._name
 
     def reöpen(self, window):
-        self.sheet = window.new_html_sheet("UiView", str(self.html))
+        self.sheet = window.new_html_sheet(self.name, str(self.html))
 
     @property
     def is_open(self):
