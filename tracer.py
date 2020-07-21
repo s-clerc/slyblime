@@ -77,6 +77,20 @@ class SlyOpenTracerCommand(sublime_plugin.WindowCommand):
       except Exception as e:
         print(e, "nay")
 
+class SlyTraceCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(**kwargs),
+            loop)
+
+    async def async_run(self, mode="toggle", query=None):
+        session = sessions.get_by_window(self.window)
+        if session is None: return
+        if query is None:
+            query = await show_input_panel(loop, self.window, "(Un)Trace", "")
+        if query is None:
+            return
+        self.window.status_message(await session.slynk.tracer_toggle(query))
 
 class Tracer(ui.UIView):
     def __init__(self, *args):

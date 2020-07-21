@@ -107,5 +107,9 @@
     {
         "caption": "Sly: Open tracer",
         "command": "sly_open_tracer"
+    },
+        {
+        "caption": "Sly: Toggle function tracing",
+        "command": "sly_trace"
     }
 ]
