@@ -189,7 +189,7 @@ class SlyReferenceCommand(sublime_plugin.TextCommand):
             query, package = await determine_input(view, input_source, event)
         results = ui.get_results_view(window)
 
-        out = f"References for `{query}`:\n"
+        out = f"\n\nReferences for `{query}`:\n"
         all_references = []
         for mode in modes:
             try:
@@ -201,10 +201,15 @@ class SlyReferenceCommand(sublime_plugin.TextCommand):
             all_references += references
             out += f"   with mode `{mode}`:\n"
             for name, location in references:
-                snippet = ""
-                if location.hints and len(location.hints) > 1 and str(location.hints[0]).lower() == ":snippet":
-                    snippet = " `" + location.hints[1] + "`"
-                out += f"      {name}:{snippet} in \x1F\n"
+                snippet = None
+                try:
+                    if str(location.hints[0][0]).lower() == ":snippet":
+                        snippet = location.hints[0][1].strip()
+                except Exception as e:
+                    pass
+                out += f"      {name}: in \x1F\n"
+                if snippet:
+                    out += ui.number_lines(snippet, "          ") + "\n"
         results.run_command("repl_insert_text",
             {"pos": (start := results.size()),
              "text": out})
