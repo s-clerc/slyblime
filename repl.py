@@ -303,6 +303,7 @@ def thaw_repl(view, repl_view):
     repl_view._view = view
     repl_view.play()
     repl_view.preserved_data = {}
+    repl_view.backtrack_phantom_set = PhantomSet(view, "backtracking")
     return view
 
 class SlyOpenReplCommand(sublime_plugin.WindowCommand):
