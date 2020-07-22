@@ -7,6 +7,9 @@ try: # Importing for ST
 except ValueError: # Importing for normal python
     from sexpdata import *
     from pydispatch import Dispatcher
+except ImportError:
+    from sexpdata import *
+    from pydispatch import Dispatcher
 
 from .structs import *
 

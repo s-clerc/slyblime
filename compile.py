@@ -37,7 +37,7 @@ async def compile_region(view, window, session, region):
         parameters["package"] = package_info[0]
         util.highlight_region(view, package_info[1], highlighting, None, highlighting["package_scope"])
     print("OK")
-    result = await session.slynk.compile_string(**parameters),
+    result = await session.slynk.compile_string(**parameters)
     return result
 
 class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
@@ -194,7 +194,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             location = result.notes[int(index)].location
             point = location["position"]
             path = location["file"]
-            view = util.open_file_at(self.window, path, point)
+            view = util.open_file_at(self.window, path, point, config["always_reopen_file"])
             snippet_region = find_snippet_region(view, location["snippet"], point)
             util.highlight_region(
                 view,
