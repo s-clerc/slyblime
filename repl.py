@@ -241,6 +241,9 @@ class SlyReplListener(sublime_plugin.EventListener):
             view.erase_regions("backtracking")
 
     def on_selection_modified(self, view):
+        if view.settings().get("enable-test"):
+            #view.run_command("show_scope_name")
+            view.add_regions("test", [util.find_containing_form(view) or Region(0,0)], "region.greenish")
         self.on_modified(view)
 
     def on_pre_close(self, view):
