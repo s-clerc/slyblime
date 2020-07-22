@@ -157,4 +157,5 @@ def send_result_to_panel(window, text=None, result="[No result]", header="[Comma
     window.focus_view(view)
     if text and should_fold:
         view.fold(region)
-    view.show(Region(origin, origin+len(out)))  
+    view.show(Region(origin, origin+len(out)))
+    return view
