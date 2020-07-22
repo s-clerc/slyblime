@@ -248,7 +248,7 @@ class SlyReplListener(sublime_plugin.EventListener):
             return
         rv.pause()
         rv.preserved_data = {
-            "settings": list(view.settings()),
+            "settings": list(view.settings().to_dict().items()),
             "contents": view.substr(Region(0, view.size())),
             "name": view.name(),
             "scratch": view.is_scratch()
@@ -323,7 +323,7 @@ class SlyOpenReplCommand(sublime_plugin.WindowCommand):
         view = repl_view._view
         util.set_status(view, session)
         self.window.focus_view(view)
-        self.window.focus_window()
+        self.window.bring_to_front()
 
       except Exception as e:
         print(f"SlyOpenReplCommandException: {e}")
