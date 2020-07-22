@@ -335,7 +335,15 @@ class SlynkClient(
     async def sticker_fetch(self, dead_stickers: List[int], *args):
         result = await self.rex(f"slynk-stickers:fetch '{dumps(dead_stickers)}")
         return result
-        
+
+    async def disassemble(self, symbol, *args):
+        result = await self.rex(f"slynk:disassemble-form {dumps(symbol)}", *args)
+        return result
+
+    async def xref(self, symbol: str, mode="calls", *args) -> List[Tuple[str, Location]]:
+        result = await self.rex(f"""slynk:xref ':{mode} '"{symbol}\"""", *args)
+        return [(name, parse_location(location)) for name, location in result]
+
 class TestListener:
     def __init__(self, client: SlynkClient, loop):
         self.client = client
@@ -381,10 +389,12 @@ async def mainA(x, y, actions):
         d = await x.documentation_symbol("print")
         print(d)
         print(await x.autodoc("(print 12)", 5))
-    if "mp":
+    if "mp" in actions:
         print("hi")
         print(await x.expand("(loop for x from 1 to 5 do (print x))"))
         print(await x.expand("(loop for x from 1 to 5 do (print x))"))
+    if "xref" in actions:
+        print(xref("evolution::move"))
     while (evaluee := input("a>>")) != "quit":
         eval(evaluee, globals(), locals())
     x.disconnect()
@@ -403,4 +413,4 @@ def main(actions):
 
 
 if __name__ == '__main__':
-    main(["mp"])
+    main(["xref"])
