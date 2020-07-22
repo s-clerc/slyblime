@@ -14,25 +14,29 @@ from . import ui_view as ui
 
   Otherwise, it uses the closest to the caret
 """
-def determine_input(view, input, event):
-    region = view.sel()[0]
-    if event and input != "buffer":
+def determine_input(view, input_source, event):
+    if event and input_source != "buffer":
         point = util.event_to_point(view, event)
-        if input == "selection":
-            region = util.nearest_region_to_point(point, view.sel())
-            if region is None:
-                view.window().status_message("No selection found")
-                return None, None
-        else:
-            region = Region(point, point)
+    else:
+        point = view.sel()[0]
 
-    if "toplevel" in input:
-        region = util.find_toplevel_form(view, region.begin())
-    elif "buffer" in input:
+    if input_source == "selection":
+        region = util.nearest_region_to_point(point, view.sel())
+        if region is None:
+            view.window().status_message("No selection found")
+            return None, None
+    elif "toplevel" in input_source:
+        region = util.find_toplevel_form(view, point)
+    elif input_source == "form":
+        region = util.find_containing_form(view, point)
+    elif "buffer" in input_source:
         region = Region(0, view.size() - 1)
+    else:
+        view.window().status_message("Command error: unable to determine input")
+        return None, None
 
     # No highlighting for buffer evaluation
-    if input in ["toplevel", "selection"]:
+    if input_source != "buffer":
         highlighting = settings().get("highlighting")
         package, package_region = util.current_package(view, region.begin(), True)
         util.highlight_region(view, region, highlighting, None, highlighting["form_scope"])
@@ -91,7 +95,7 @@ class SlyEvalRegionCommand(sublime_plugin.TextCommand):
             True, 
             package)
         if output == "status_message":
-            view.window().status_message(
+            self.view.window().status_message(
                 result if result 
                        else f"An error occured during interactive evaluation")
         elif output == "panel":

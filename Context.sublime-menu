@@ -16,10 +16,10 @@
         "command": "sly_eval_region"
       },
       {
-        "caption": "Evaluate toplevel at cursor",
+        "caption": "Evaluate form at cursor",
         "command": "sly_eval_region",
         "args": {
-          "input_source": "toplevel"
+          "input_source": "form"
         }
       },
       {
@@ -30,10 +30,10 @@
         }
       },
       {
-        "caption": "Expand-1 toplevel at cursor",
+        "caption": "Expand-1 form at cursor",
         "command": "sly_expand",
         "args": {
-          "input_source": "toplevel",
+          "input_source": "form",
           "recursively": false,
         }
       },
