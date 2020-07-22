@@ -288,7 +288,8 @@ def nearest_region_to_point (point: int, regions: Iterable[Region]) -> Optional[
 def open_file_at(window, path, point, always_reopen=False):
     view = window.find_open_file(path)
     if view is None or always_reopen:
-        view = window.open_file(path, sublime.TRANSIENT)
+        view = window.open_file(path)
+    window.focus_view(view)
     # To deal with weird thread stuff, we call it back.
     set_timeout(
         lambda: view.show_at_center(point),

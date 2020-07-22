@@ -111,5 +111,13 @@
         {
         "caption": "Sly: Toggle function tracing",
         "command": "sly_trace"
+    },
+    {
+        "caption": "Sly: Toggle function tracing",
+        "command": "sly_trace"
+    },
+    {
+        "caption": "Sly: Find all possible references to symbol",
+        "command": "sly_reference"
     }
 ]
