@@ -1,5 +1,83 @@
 [
     {
+        "caption": "Preferences",
+        "mnemonic": "n",
+        "id": "preferences",
+        "children":
+        [
+            {
+                "caption": "Package Settings",
+                "mnemonic": "P",
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "Slyblime",
+                        "children":
+                        [
+                                {
+        "caption": "Upgrade SublimeREPL to work with Sly",
+        "command": "sly_upgrade_sublime_repl"
+    },
+    {
+        "caption": "Downgrade SublimeREPL to the original version of Python",
+        "command": "sly_downgrade_sublime_repl"
+    }, 
+    {"caption": "-"},
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/Slyblime/sly.sublime-settings"
+                                },
+                                "caption": "Settings – Default"
+                            },
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/User/sly.sublime-settings"
+                                },
+                                "caption": "Settings – User"
+                            },
+                            { "caption": "-" },
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/Slyblime/sly.sublime-keymap"
+                                },
+                                "caption": "Keybindings – Default"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (OSX).sublime-keymap",
+                                    "platform": "OSX"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (Linux).sublime-keymap",
+                                    "platform": "Linux"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (Windows).sublime-keymap",
+                                    "platform": "Windows"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            { "caption": "-" },
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "caption": "Sly",
         "id": "sly",
         "children": [
