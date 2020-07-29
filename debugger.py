@@ -79,12 +79,10 @@ class Debugger(ui.UIView):
 
     async def on_url_press(self, action, index=None, **rest):
       try:
-        print("start")
         index = int(index) if index is not None else None
         action = action.lower()
         slynk = self.session.slynk
         if action == "frame":
-          try:
             element = self.html.get_element_by_id(f"frame-{index}")[0]
             if "open" in element.attributes:
                 del element.attributes["open"]
@@ -113,8 +111,6 @@ class Debugger(ui.UIView):
                 ]
                 self.current_locals = self.data.stack_frames[index].locals
             self.flip()
-          except Exception as e:
-                print("AU", e)
         elif action == "frame-describe":
             set_timeout(lambda: self.window.run_command("sly_describe",
                 {"query": self.current_locals[index].value,
@@ -132,32 +128,21 @@ class Debugger(ui.UIView):
         elif action == "locate-frame":
             result = await slynk.debug_frame_source(index, self.data.thread)
             if result.file:
-                try:
-                    print("OUaoeu")
-                    print(result.position.offset)
-                    util.open_file_at(self.window, result.file, result.position.offset)
-                    print("OK  aaa REVER")
-                except Exception as e:
-                    print("NAYAY", e)
+                print(result.position.offset)
+                util.open_file_at(self.window, result.file, result.position.offset)
         elif "inspect" in action:
-          try:
-            print("IV")
             maybe_inspector = None
             for maybe_inspector in self.session.inspectors.values():
                 if maybe_inspector.window == self.window:
                     inspector = maybe_inspector
                     break
             inspector = Inspector(self.session, self.window)
-            print(inspector)
             if action == "inspect-frame":
                 await inspector.inspect_in_frame(
                     index,
                     self.data.thread)
             elif action == "inspect-condition":
                 await inspector.inspect_current_condition(self.data.thread)
-            print("DONE")
-          except Exception as e:
-            print("IE", e)
         elif action == "return-frame":
             try:
                 await slynk.debug_return_from_frame(
@@ -172,7 +157,6 @@ class Debugger(ui.UIView):
                 self.window.status_message(str(e))
         else:
             if action == "eval-frame":
-                print("EV")
                 result = await slynk.debug_eval_in_frame(
                     index, 
                     await util.show_input_panel(
@@ -190,7 +174,6 @@ class Debugger(ui.UIView):
                 header = "Invokation of frame restart"
             else:
                 result = "Error, URL command unknown"
-            print(result)
             if "\n" in result:
                 ui.send_result_to_panel(
                     self.window,

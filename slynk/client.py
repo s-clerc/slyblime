@@ -65,4 +65,4 @@ class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
         length = str(hex(len(output)))[2:].zfill(6).upper()
         buffer = length.encode("utf-8") + output
         self.transport.write(buffer)
-        print(buffer)
+        # print(buffer)

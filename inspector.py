@@ -275,7 +275,6 @@ class Inspector(ui.UIView):
             thread=thread,
             current_inspector=self.id,
             target_inspector=self.id)
-        print("REçU OK", data)
         self.html = design(self.id, data)
         self.flip()
       except Exception as e:
@@ -287,7 +286,6 @@ class Inspector(ui.UIView):
             thread=thread,
             current_inspector=self.id,
             target_inspector=self.id)
-        print("REçU OK", data)
         self.html = design(self.id, data)
         self.flip()
       except Exception as e:
@@ -299,7 +297,6 @@ class Inspector(ui.UIView):
             *args,
             current_inspector=self.id,
             target_inspector=self.id)
-        print("IN PA OK", data)
         self.html = design(self.id, data)
         self.flip()
       except Exception as e:

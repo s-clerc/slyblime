@@ -38,7 +38,6 @@ class Details(BaseHtmlElement):
         if "open" in self.attributes:
             element = DIV(**self.attributes)
             element += self
-            print("aoeu", element)
             return str(element)
         else:
             return str(DIV(**self.attributes)[

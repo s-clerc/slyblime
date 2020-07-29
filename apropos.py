@@ -25,7 +25,6 @@ class AproposCommand(sublime_plugin.WindowCommand):
         asyncio.run_coroutine_threadsafe(self.async_confirm(pattern, external_only), loop)
 
     async def async_confirm(self, pattern, external_only=True):
-        print(f"ext {external_only}")
         # Maybe this change will result in weird behaviour, idk
         # since the session has already been checked above
         session = sessions.get_by_window(self.window)

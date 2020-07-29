@@ -28,7 +28,7 @@ class Documentation:
             # `dumps(Symbol("SLYNK::%CURSOR-MARKER%"))` => `'"SLYNK::%CURSOR-MARKER"'`
             command = f"SLYNK:AUTODOC '{dumps(output_forms)[:-1]} SLYNK::%CURSOR-MARKER%) :PRINT-RIGHT-MARGIN 80"
         except Exception as e:
-            print("Error constructing command")
+            print("Error constructing command for autodoc")
             print(e)
             return Symbol(":NOT-AVAILABLE")
         else:

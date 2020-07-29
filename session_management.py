@@ -4,7 +4,6 @@ from .sly import *
 from . import util
 
 def prepare_preview(session):
-    print("prep")
     slynk = session.slynk
     lisp = slynk.connexion_info.lisp_implementation
 

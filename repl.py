@@ -32,7 +32,6 @@ class ReplWrapper(repl.Repl):
         return None
 
     def write(self, to_write):
-        print(to_write)
         self.slynk_repl.process(to_write)
 
 
@@ -92,7 +91,6 @@ class EventBasedReplView(sublimerepl.ReplView):
         return False
 
     def on_print(self, message, *args):
-        print(f"write: {message}")
         self.fresh_line()
         self.write(self.prevent_double_newline(str(message)))
 
@@ -171,7 +169,7 @@ async def create_main_repl(session):
         view.set_name(affixes[0] + str(repl.channel.id) + affixes[1])
         return rv
     except Exception as e:
-        print(e)
+        print("ReplCreationException", e)
         traceback.print_exc()
         sublime.error_message(repr(e))
 

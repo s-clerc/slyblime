@@ -67,7 +67,6 @@ class SlynkSession:
         print("SLYNK connexion lost")
 
     async def on_debug_setup(self, data):
-        print("run")
         if data.thread in self.debuggers:
             debugger = self.debuggers[data.thread]
         else:
@@ -113,7 +112,6 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
             loop)
 
     async def async_run(self, host=None, port=None, prompt_connexion=None):
-        print("hi")
         defaults = settings().get("default_connexion_parameters")
         host = defaults["hostname"] if host is None else host
         port = defaults["port"] if port is None else port
