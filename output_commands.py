@@ -225,6 +225,7 @@ class SlyReferenceCommand(sublime_plugin.TextCommand):
                 self.open))
             start = region.end()
         hex = uuid.uuid4().hex
+        window.focus_view(results)
         self.ASSORTED_PHANTOMS.append(PhantomSet(results, hex))
         self.ASSORTED_PHANTOMS[-1].update(phantoms)
       except Exception as e:
