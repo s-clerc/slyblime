@@ -32,6 +32,8 @@ Currently it includes:
 
 The main features missing are the ability to open a Lisp process directly from the editor and stickers.
 
+As a workaround, you can run `Sly: Path to bundled copy of Slynk` and then `lisp --load `path that was pasted to the clipboard` ` in the terminal to quickly start a lisp process on the default port.
+
 ## Installation
 First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
 Either download the file and unzip it in ST's packages folder or just use Package Control to install it.
