@@ -79,15 +79,14 @@
     },
     {
         "caption": "Sly: Evaluate contents of view",
-        "command": "sly_output",
+        "command": "sly_eval",
         "args": {
-            "input_source": "buffer",
-            "mode": "eval"
+            "input_source": "buffer"
         }
     },
         {
         "caption": "Sly: Expand contents of view",
-        "command": "sly_output",
+        "command": "sly_expand",
         "args": {
             "input_source": "buffer",
             "mode": "eval"
@@ -113,11 +112,7 @@
         "command": "sly_trace"
     },
     {
-        "caption": "Sly: Toggle function tracing",
-        "command": "sly_trace"
-    },
-    {
-        "caption": "Sly: Find all possible references to symbol",
+        "caption": "Sly: Find references to symbol",
         "command": "sly_reference"
     },
     {

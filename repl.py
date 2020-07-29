@@ -161,7 +161,7 @@ async def create_main_repl(session):
                 ReplWrapper(repl), 
                 settings().get("repl")["syntax"], None)
         except Exception as e:
-            self.window.status_message(f"REPL-spawning failure {str(e)}")
+            window.status_message(f"REPL-spawning failure: {str(e)}")
             return
         #rv.call_on_close.append(self._delete_repl)
         session.repl_views[repl.channel.id] = rv
@@ -171,6 +171,7 @@ async def create_main_repl(session):
         view.set_name(affixes[0] + str(repl.channel.id) + affixes[1])
         return rv
     except Exception as e:
+        print(e)
         traceback.print_exc()
         sublime.error_message(repr(e))
 

@@ -34,7 +34,7 @@
         "command": "sly_expand",
         "args": {
           "input_source": "form",
-          "recursively": false,
+          "recursively": false
         }
       },
     ]
