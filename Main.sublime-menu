@@ -14,7 +14,11 @@
                     {
                         "caption": "Slyblime",
                         "children":
-                        [
+                        [       
+                            {   
+                                "caption": "Sly: Path to the bundled copy of Slynk",
+                                "command": "sly_show_slynk_starter_url"
+                            },
                             {
                                 "caption": "Upgrade SublimeREPL to work with Sly",
                                 "command": "sly_upgrade_sublime_repl"
