@@ -1,13 +1,13 @@
 
-    {
-        "selector": "source.lisp",
-        "target": "sly_compile_file",
-        "name": "Sly compile file",
-        "load": false,
-        "variants": [
-            {
-                "load": true,
-                "name": "and autoload file on success"
-            }
-        ]
-    }
+{
+    "selector": "source.lisp",
+    "target": "sly_compile_file",
+    "name": "Sly build: compile file",
+    "load": false,
+    "variants": [
+        {
+            "load": true,
+            "name": "and autoload file on success"
+        }
+    ]
+}

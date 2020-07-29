@@ -15,15 +15,15 @@
                         "caption": "Slyblime",
                         "children":
                         [
-                                {
-        "caption": "Upgrade SublimeREPL to work with Sly",
-        "command": "sly_upgrade_sublime_repl"
-    },
-    {
-        "caption": "Downgrade SublimeREPL to the original version of Python",
-        "command": "sly_downgrade_sublime_repl"
-    }, 
-    {"caption": "-"},
+                            {
+                                "caption": "Upgrade SublimeREPL to work with Sly",
+                                "command": "sly_upgrade_sublime_repl"
+                            },
+                            {
+                                "caption": "Downgrade SublimeREPL to the original version of Python",
+                                "command": "sly_downgrade_sublime_repl"
+                            }, 
+                            {"caption": "-"},
                             {
                                 "command": "open_file", "args":
                                 {
