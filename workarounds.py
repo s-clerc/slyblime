@@ -46,3 +46,13 @@ class SlyDowngradeSublimeReplCommand(sublime_plugin.ApplicationCommand):
 
     def is_visible(self):
         return is_upgraded()
+
+
+class SlyShowSlynkStarterUrlCommand(sublime_plugin.ApplicationCommand):
+    def run(self):
+        path = f"{packages_path()}/{__name__.split('.')[0]}/sly/slynk/start-slynk.lisp"
+        should_continue = ok_cancel_dialog(
+            (f"The path to the bundled version of Slynk is \n\n {path}"
+              "\n\nPress OK to copy it to the clipboard"))
+        if should_continue:
+            set_clipboard(path)
