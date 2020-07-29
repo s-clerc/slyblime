@@ -162,6 +162,21 @@
                     }
                 ]
             },
+            {   "caption": "Inspection",
+                "children": [
+                    {
+                        "caption": "Inspect…",
+                        "command": "inspect"
+                    },
+                    {
+                        "caption": "Inspect in new inspector…",
+                        "command": "inspect",
+                        "args": {
+                            "not_open": true
+                        }
+                    },      
+                ]
+            },
             {
                 "caption": "Information",
                 "children": [
@@ -179,17 +194,7 @@
                             "external_only": false
                         }
                     },
-                    {
-                        "caption": "Inspect…",
-                        "command": "inspect"
-                    },
-                    {
-                        "caption": "Inspect in new inspector…",
-                        "command": "inspect",
-                        "args": {
-                            "not_open": true
-                        }
-                    },      
+                    {"caption": "-"},
                     {
                         "caption": "Describe symbol normally…",
                         "command": "sly_describe"
@@ -205,6 +210,7 @@
                         "caption": "Find references to symbol…",
                         "command": "sly_reference"
                     },
+                    {"caption": "-"},
                     {
                         "caption": "Expand-1 contents of view",
                         "command": "sly_expand",
