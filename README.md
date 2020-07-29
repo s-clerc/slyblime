@@ -1,9 +1,20 @@
+```
+      ___           ___       ___           ___           ___                   ___           ___     
+     /\  \         /\__\     |\__\         /\  \         /\__\      ___        /\__\         /\  \    
+    /::\  \       /:/  /     |:|  |       /::\  \       /:/  /     /\  \      /::|  |       /::\  \   
+   /:/\ \  \     /:/  /      |:|  |      /:/\:\  \     /:/  /      \:\  \    /:|:|  |      /:/\:\  \  
+  _\:\~\ \  \   /:/  /       |:|__|__   /::\~\:\__\   /:/  /       /::\__\  /:/|:|__|__   /::\~\:\  \ 
+ /\ \:\ \ \__\ /:/__/        /::::\__\ /:/\:\ \:|__| /:/__/     __/:/\/__/ /:/ |::::\__\ /:/\:\ \:\__\
+ \:\ \:\ \/__/ \:\  \       /:/~~/~    \:\~\:\/:/  / \:\  \    /\/:/  /    \/__/~~/:/  / \:\~\:\ \/__/
+  \:\ \:\__\    \:\  \     /:/  /       \:\ \::/  /   \:\  \   \::/__/           /:/  /   \:\ \:\__\  
+   \:\/:/  /     \:\  \    \/__/         \:\/:/  /     \:\  \   \:\__\          /:/  /     \:\ \/__/  
+    \::/  /       \:\__\                  \::/__/       \:\__\   \/__/         /:/  /       \:\__\    
+     \/__/         \/__/                   ~~            \/__/                 \/__/         \/__/    
+
+```
+
 Slyblime is Sylvester the Cat's Common Lisp IDE for Sublime Text 4:
 
-🤔 Read a short illustrated guide
-📽️ Scroll down this README for some pretty gifs
-📣 Read the NEWS file
-📚 Read the manual
 Slyblime is an implementation of [SLY](https://github.com/joaotavora/sly) and uses the same backend (SLYNK).
 
 Currently it includes:
@@ -17,8 +28,10 @@ Currently it includes:
 * Multiple connexions
 * Debugger including stack frame inspection
 
-## Installation
+The main features missing are the ability to open a Lisp process directly from the editor and stickers.
 
+## Installation
+First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
 Either download the file and unzip it in ST's packages folder or just use Package Control to install it.
 
 ## Copying

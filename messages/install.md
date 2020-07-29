@@ -14,7 +14,7 @@
 
 Hi thanks for installing slyblime.
 
-To get started, you'll need to **upgrade SublimeREPL to use Python 3.8**.
-To do that, type `Sly: Upgrade SublimeREPL to work with Sly` into the command palette and follow the instructions.
+To get started, you'll need to **install upgrade SublimeREPL to use Python 3.8**.
+To do that, first install SublimeREPL (via Package Control) and then type `Sly: Upgrade SublimeREPL to work with Sly` into the command palette and follow the instructions.
 
 Then, to connect to a Slynk server just use the `Sly: Connect to Slynk` command and start lisping.
