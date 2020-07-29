@@ -78,7 +78,7 @@ class Repl(Dispatcher):
         if command in self._events_:
             self.emit(command, *data[1:])
         else:
-            print(f"unknown event {command}")
+            print(f"Unknown Event for Slynk Channel {command}")
             self.emit("unknown", *data)
 
     def process(self, input):

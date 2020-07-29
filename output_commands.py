@@ -29,7 +29,6 @@ async def determine_input(view, input_source, event):
         region = Region(point, point)
     elif input_source == "selection":
         region = util.nearest_region_to_point(point, view.sel())
-        print(region)
         if region is None:
             view.window().status_message("No selection found")
             return None, None
@@ -65,14 +64,10 @@ class SlyExpandCommand(sublime_plugin.TextCommand):
     async def async_run(self, *args, input_source="selection", output="panel", event=None, **kwargs):
         session = sessions.get_by_window(self.view.window())
         if session is None: return
-        print("OK")
         try:
             text, package = await determine_input(self.view, input_source, event)
-            print(text)
             if text is None:
                 return
-            print("now start")
-            print(kwargs)
             result, name = await session.slynk.expand(
                 text, 
                 package,
@@ -153,14 +148,11 @@ class SlyDescribeCommand(sublime_plugin.TextCommand):
         view = self.view or self.window.active_view()
         session = sessions.get_by_window(window)
         if session is None: return 
-        print("hello")
         if input_source == "given":
             query = kwargs["query"]
         else:
             query, __ = await determine_input(view, input_source, event)
-            print(query)
         result = await session.slynk.describe(query, mode)
-        print(result)
         ui.send_result_to_panel(
             window=window,
             result=result, 
@@ -234,5 +226,4 @@ class SlyReferenceCommand(sublime_plugin.TextCommand):
     def open(self, url):
         window = self.view.window() or self.window
         point, path = url.split(" ", 1)
-        print("open", path, point)
         util.open_file_at(window, path, int(point))

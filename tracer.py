@@ -32,19 +32,19 @@ class SlyOpenTracerCommand(sublime_plugin.WindowCommand):
             loop)
 
     async def async_run(self, **q):
-      try:
-        session = sessions.get_by_window(self.window)
-        if session is None: return
-        if not (tracer := session.tracer):
-            session.tracer = Tracer(self.window, session)
-        elif tracer.is_open:
-            window = tracer.sheet.window()
-            window.focus_sheet(tracer)
-            window.bring_to_front()
-        else:
-            tracer.reöpen(self.window)
-      except Exception as e:
-        print(e, "nay")
+        try:
+            session = sessions.get_by_window(self.window)
+            if session is None: return
+            if not (tracer := session.tracer):
+                session.tracer = Tracer(self.window, session)
+            elif tracer.is_open:
+                window = tracer.sheet.window()
+                window.focus_sheet(tracer)
+                window.bring_to_front()
+            else:
+                tracer.reöpen(self.window)
+        except Exception as e:
+            print("OpenTracerFailure", e)
 
 class SlyTraceCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
@@ -75,7 +75,7 @@ class Tracer(ui.UIView):
 
         asyncio.run_coroutine_threadsafe(self.design(), loop)
       except Exception as e:
-        print(f"aouaoeu {e}")
+        print(f"TracerInitialisationFailure {e}")
 
 
     async def design(self):
@@ -105,9 +105,8 @@ class Tracer(ui.UIView):
     async def refresh_tracees(self):
         try:
             self.tracees = await self.slynk.tracer_report_specs()
-            print("OK REP")
         except Exception as e:
-            print("repspcEx", e)
+            print("TraceesRefreshFailure", e)
         self.tracees_element.clear()
         self.tracees_element += [
             DIV(_class="list-element")[
@@ -128,15 +127,12 @@ class Tracer(ui.UIView):
             traces, remainder, __ = await self.slynk.tracer_report_partial_tree(
                 f"sublime-sly-tracer-{self.id}")
             self.traces += traces
-            print(traces)
             self.output_element[0] += self.render_as_tree(traces)
 
     async def erase_output(self):
         self.output_element[0] = " "
 
     async def on_url_press(self, action, index=None, trace_id=None, term_index=None, is_input_value=None, **rest):
-      print("HI37")
-      print(action)
       try:
         if "untrace" in action or action in ["refresh-tracees", "add-new"]:
             if action == "add-new":
@@ -153,7 +149,6 @@ class Tracer(ui.UIView):
             self.output_element[0] = " "
             self.traces = []
         elif action == "fetch-all":
-            print("fetch-all")
             await self.fetch("all")
         elif action == "fetch-next":
             await self.fetch()
@@ -170,7 +165,7 @@ class Tracer(ui.UIView):
             self.total_element[0] = f"{len(self.traces)}/{self.total_traces}"
         self.flip()
       except Exception as e:
-        print("OUPE", e)
+        print("TracerURLFailure", e)
 
     def prepare_terms(self, terms, prefixes, arrow, id, is_input_value):
         return [

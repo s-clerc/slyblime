@@ -17,7 +17,6 @@ from . import slynk, util, sexpdata
 
 
 async def compile_region(view, window, session, region):
-    print("hi")
     if region.size() == 0: return
     config = settings().get("compilation")
     highlighting = settings().get("highlighting")
@@ -36,7 +35,6 @@ async def compile_region(view, window, session, region):
     if package_info[0]: 
         parameters["package"] = package_info[0]
         util.highlight_region(view, package_info[1], highlighting, None, highlighting["package_scope"])
-    print("OK")
     result = await session.slynk.compile_string(**parameters)
     return result
 
@@ -110,7 +108,6 @@ class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
 class SlyCompileFileCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
         load = kwargs.get("load", False)
-        print("hello")
         session = sessions.get_by_window(self.window)
         if session is None: 
             return
@@ -122,12 +119,10 @@ class SlyCompileFileCommand(sublime_plugin.WindowCommand):
 
 async def compile_file(window, session, path, name, load):
     result = await session.slynk.compile_file(path, load)
-    print("OK")
     await handle_compilation_results(window, path, result)
 
 
 async def handle_compilation_results(window, path, result):
-    print("hi")
     if type(result) == list:
         return
     compilation_results[str(path)] = result

@@ -88,12 +88,10 @@ class SlynkClient(
             self.emit("disconnect")
 
     async def handle_read(self, data):
-        print(f"handle-read: {data}")
         expression = loads(data.decode("utf-8"))
         command = str(expression[0]).lower()[1:]  # This should be a keyword symbol
         parameter = expression[1]
         if command == "return":
-            print("return reception")
             self.rex_return_handler(expression)
         elif command == "write-string":
             self.emit("write_string", parameter)
@@ -169,9 +167,7 @@ class SlynkClient(
 
     async def read_from_minibuffer_handler(self, expression):
         thread, tag, prompt, initial_value = extract_question_properties(expression)
-        print("OK")
         answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
-        print("DOK")
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def y_or_n_handler(self, expression):

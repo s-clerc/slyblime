@@ -13,7 +13,6 @@ if "VIEWS" not in globals():
 
 class SlyUrlCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
-        print("HI")
         asyncio.run_coroutine_threadsafe(
             self.async_run(**kwargs),
             loop)
@@ -23,24 +22,23 @@ class SlyUrlCommand(sublime_plugin.WindowCommand):
         view = VIEWS[q["__id"]]
         await view.on_url_press(**q)
       except e as Exception:
-        print(e)
+        print("GeneralSlyUrlFailure", e)
 
 
 class UIView:
     def __init__ (self, window, session):
-      try:
-        global VIEWS
-        self._name = "UIView"
-        self.session = session
-        self.slynk = session.slynk
-        self.html = "System ready..."
-        self.id = uuid.uuid4().hex
-        print("hioeu")
-        VIEWS[self.id] = self
-        self.last_modified = datetime.now()
-        self.reöpen(window)
-      except Exception as e:
-        print(f"ERorr: {e}")
+        try:
+            global VIEWS
+            self._name = "UIView"
+            self.session = session
+            self.slynk = session.slynk
+            self.html = "System ready..."
+            self.id = uuid.uuid4().hex
+            VIEWS[self.id] = self
+            self.last_modified = datetime.now()
+            self.reöpen(window)
+        except Exception as e:
+            print(f"UIViewInitialisationFailure: {e}")
 
     def flip(self):
         self.sheet.set_contents(str(self.html))
