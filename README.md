@@ -41,7 +41,7 @@ Make sure to use the included `Lisp+` syntax for all the features to work correc
 
 ## Installation
 First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
-Either download the file and unzip it in ST's packages folder or just use Package Control to install it.
+Either download the file and unzip it in ST's packages folder or ~~just use Package Control to install it.~~ [not avaliable just yet]
 
 ## Copying
 
