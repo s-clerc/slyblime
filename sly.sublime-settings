@@ -12,7 +12,7 @@
     ],
     "prompt": "⟩ ",
     "error": [" ｢", "｣"],
-    "syntax": "Packages/Lisp/Lisp.tmLanguage",
+    "syntax": "Packages/slyblime/Lisp.sublime-syntax",
     "view_title_affixes": ["🖵 sly ", ""],
     "value_prefix": "⟹ ",
     "avoid_double_newline": true,
