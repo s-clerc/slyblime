@@ -118,20 +118,26 @@ class SlyCompileFileCommand(sublime_plugin.WindowCommand):
             loop)
 
 async def compile_file(window, session, path, name, load):
-    result = await session.slynk.compile_file(path, load)
+    try:
+        result = await session.slynk.compile_file(path, load)
+    except Exception as e:
+        print(e)
+    print(result)
     await handle_compilation_results(window, path, result)
 
 
 async def handle_compilation_results(window, path, result):
     if type(result) == list:
+        print("EE")
         return
     compilation_results[str(path)] = result
     try:
         if not result.success:
-            if load == True: 
+            if result.load == True: 
                 window.status_message("Loading cancelled due to unsuccessful compilation")
-            elif load == False:
+            elif result.load == False:
                 window.status_message("Compilation encountered at least one error")
+            
             if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
                 show_notes_as_regions(window, path, result)
             else: 
@@ -167,7 +173,7 @@ def show_notes_view(window, path, name, result):
             position = escape(str(location["position"]))
             severity = escape(str(note.severity)[1:].capitalize())
             html += (f'<h2>{severity}: {escape(note.message)} </h2>'
-                     f'<blockquote> {escape(location["snippet"])} </blockquote><br>'
+                     f'<blockquote> {escape(location.get("snippet", ""))} </blockquote><br>'
                      # We're using json.dumps because lazy
                      f'<a href=\'subl:sly_compilation_error_url {{"index": {index}, "path": "{path}"}}\'>{path} at {position}</a>')
         html += "</body></html>"
@@ -190,7 +196,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             point = location["position"]
             path = location["file"]
             view = util.open_file_at(self.window, path, point, config["always_reopen_file"])
-            snippet_region = find_snippet_region(view, location["snippet"], point)
+            snippet_region = find_snippet_region(view, location.get("snippet", ""), point)
             util.highlight_region(
                 view,
                 snippet_region,
@@ -219,7 +225,7 @@ def show_notes_as_regions(window, path, result: slynk.structs.CompilationResult)
     are_visible = []
     for i, note in enumerate(result.notes):
         point = note.location["position"]
-        snippet = note.location["snippet"]
+        snippet = note.location.get("snippet", "")
         # Not a raw string intentionally VVVV
         if regional_settings["ignore_snippet_after_\n"]:
             snippet = snippet.split("\n", 1)[0] 
