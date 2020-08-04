@@ -101,7 +101,7 @@ def property_list_to_dict(plist, *args):
 
 def association_list_to_dict(alist, preserve_list=False, *args):
     return {parse_symbol(values[0], *args): (values[1:] if preserve_list else values[1])
-            for values in alist}
+            for values in alist if values != []}
 
   # Slynk data parsing
 def parse_position(raw_position):
@@ -164,6 +164,14 @@ def parse_location(raw_location):
     return data
 
 
+def get_at(array, index, default=None):
+    try:
+        result = array[index]
+    except IndexError:
+        result = default
+    return result
+
+
 def parse_compilation_information(expression):
     def parse_compilation_note(expression):
         note = property_list_to_dict(expression)
@@ -173,10 +181,10 @@ def parse_compilation_information(expression):
 
     return CompilationResult(
         notes=[parse_compilation_note(note) for note in expression[1]],
-        success=True if expression[2] else False,
-        duration=expression[3] if expression[3] else None,
-        load=True if expression[4] else False,
-        path=expression[5] if expression[5] else None)
+        success=True if get_at(expression, 2) else False,
+        duration=get_at(expression, 3),
+        load=True if get_at(expression, 4) else False,
+        path=get_at(expression, 5))
 
 def parse_inspection(inspection):
     def parse_element(element):
