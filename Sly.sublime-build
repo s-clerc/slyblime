@@ -8,6 +8,10 @@
         {
             "load": true,
             "name": "and autoload file on success"
+        },
+        {
+            "load": "always",
+            "name": "and autoload file ignoring errors"
         }
     ]
 }

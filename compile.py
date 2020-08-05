@@ -123,21 +123,22 @@ async def compile_file(window, session, path, name, load):
     except Exception as e:
         print(e)
     print(result)
-    await handle_compilation_results(window, path, result)
+    await handle_compilation_results(window, path, result, load)
 
 
-async def handle_compilation_results(window, path, result):
+async def handle_compilation_results(window, path, result, load):
     if type(result) == list:
-        print("EE")
         return
     compilation_results[str(path)] = result
     try:
         if not result.success:
             if result.load == True: 
-                window.status_message("Loading cancelled due to unsuccessful compilation")
+                if load == "always":
+                    window.status_message("Loading in spite of errors")
+                else:
+                    window.status_message("Loading cancelled due to unsuccessful compilation")
             elif result.load == False:
                 window.status_message("Compilation encountered at least one error")
-            
             if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
                 show_notes_as_regions(window, path, result)
             else: 
