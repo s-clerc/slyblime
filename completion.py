@@ -106,9 +106,12 @@ class SlyCompletionListener(sublime_plugin.EventListener):
         # Failure will not be indicated because it would be incredibly annoying otherwise
         session = sly.sessions.get_by_window(view.window(), indicate_failure=False)
         if session is None: return
+
         try:
             completions = asyncio.run_coroutine_threadsafe(
-                session.slynk.completions(pattern), 
+                session.slynk.completions(
+                    pattern,
+                    util.current_package(view)), 
                 session.loop).result(sly.settings().get("maximum_timeout"))
         except Exception as e:
             session.window.status_message(f"Failed to fetch completion for {pattern}")
