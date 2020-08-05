@@ -68,7 +68,7 @@ class SlyCompileSelectionCommand(sublime_plugin.TextCommand):
             await handle_compilation_results(
                 window,
                 basename(path),
-                result[0])
+                result)
 
     def want_event(self):
         return True
@@ -98,7 +98,7 @@ class SlyCompileTopLevelCommand(sublime_plugin.TextCommand):
             await handle_compilation_results(
                 window,
                 basename(path),
-                result[0])
+                result)
         else:
             window.status_message("Failed to find nearby top-level form.")
 
@@ -126,7 +126,7 @@ async def compile_file(window, session, path, name, load):
     await handle_compilation_results(window, path, result, load)
 
 
-async def handle_compilation_results(window, path, result, load):
+async def handle_compilation_results(window, path, result, load=None):
     if type(result) == list:
         return
     compilation_results[str(path)] = result
