@@ -119,6 +119,9 @@ class SlynkClient(
             self.ping_handler(expression)
         elif command == "channel-send":
             self.channels[parameter].message_recieved(expression[2])
+        elif command == "indentation-update":
+            self.connexion_info.indentation = parameter
+            self.emit("indentation_update", parameter)
         else:
             print("Danger, unknown command: " + command)
 
