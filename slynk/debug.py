@@ -37,45 +37,41 @@ class Debug:
             expression[2]
         ))
 
-    async def debug_invoke_restart(self, level, restart, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
+    async def debug_invoke_restart(self, level, restart, thread, *args, **kwargs):
         command = "SLYNK:INVOKE-NTH-RESTART-FOR-EMACS " + str(level) \
                   + " " + str(restart)
-        result = await self.rex(command, thread, package)
+        result = await self.rex(command, thread, *args, **kwargs)
         return result
 
-    async def debug_escape_all(self, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SLYNK:THROW-TO-TOPLEVEL", thread, package)
+    async def debug_escape_all(self, thread, *args, **kwargs):
+        result = await self.rex("SLYNK:THROW-TO-TOPLEVEL", thread, *args, **kwargs)
         return result
 
-    async def debug_continue(self, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
-        result = await self.rex("SLYNK:SLY-DB-CONTINUE", thread, package)
+    async def debug_continue(self, thread, *args, **kwargs):
+        result = await self.rex("SLYNK:SLY-DB-CONTINUE", thread, *args, **kwargs)
         return result
 
-    async def debug_abort_current_level(self, level, thread, *args):
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
+    async def debug_abort_current_level(self, level, thread, *args, **kwargs):
         if level == 1:
-            result = await self.debug_escape_all(thread, package)
+            result = await self.debug_escape_all(thread, *args, **kwargs)
         else:
-            result = await self.rex("SLYNK:SLY-DB-ABORT", thread, package)
+            result = await self.rex("SLYNK:SLY-DB-ABORT", thread, *args, **kwargs)
         return result
 
-    async def debug_get_stack_trace(self, thread, *args):
-        frames = await self.rex("SLYNK:BACKTRACE 0 NIL", thread, *args)
+    async def debug_get_stack_trace(self, thread, *args, **kwargs):
+        frames = await self.rex("SLYNK:BACKTRACE 0 NIL", thread, *args, **kwargs)
         return [StackFrame(
             int(frame[0]),
             str(frame[1]),
             True if len(frame) >= 3 and bool(frame[2][1]) else False
         ) for frame in frames]
 
-    async def debug_stack_frame_details(self, index, stack_frames, thread, *args):
+    async def debug_stack_frame_details(self, index, stack_frames, *args, **kwargs):
         frame = [frame for frame in stack_frames if frame.index == index][0]
         if frame.locals is not None:
             return frame
         else:
-            response = await self.rex(f"SLYNK:FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", thread, *args)
+            response = await self.rex(f"SLYNK:FRAME-LOCALS-AND-CATCH-TAGS {str(index)}", *args, **kwargs)
             frame.locals = [StackFrameLocal(
                 str(local[1]),
                 int(local[3]),
@@ -85,87 +81,87 @@ class Debug:
             frame.catch_tags = [str(tag) for tag in response[1]]
             return frame
 
-    async def debug_restart_frame(self, frame, thread, *args):
-        response = await self.rex(f"SLYNK:RESTART-FRAME {frame}", thread, *args)
+    async def debug_restart_frame(self, frame, *args, **kwargs):
+        response = await self.rex(f"SLYNK:RESTART-FRAME {frame}", *args, **kwargs)
         return response
 
-    async def debug_return_from_frame(self, frame, value, thread, *args):
-        was_error = await self.rex(f"SLYNK:SLY-DB-RETURN-FROM-FRAME {frame} {dumps(value)}", thread, *args)
+    async def debug_return_from_frame(self, frame, value, *args, **kwargs):
+        was_error = await self.rex(f"SLYNK:SLY-DB-RETURN-FROM-FRAME {frame} {dumps(value)}", *args, **kwargs)
         if bool(was_error):
             raise Exception("Lisp error while returning from frame: " + str(was_error))
 
-    async def debug_frame_source(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:FRAME-SOURCE-LOCATION {frame}", thread, *args)
+    async def debug_frame_source(self, frame, thread, *args, **kwargs):
+        result = await self.rex(f"SLYNK:FRAME-SOURCE-LOCATION {frame}", thread, *args, **kwargs)
         return parse_location(result)
 
-    async def debug_disassemble_frame(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-DISASSEMBLE {frame}", thread, *args)
+    async def debug_disassemble_frame(self, frame, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-DISASSEMBLE {frame}", *args, **kwargs)
         return str(result)
 
-    async def debug_eval_in_frame(self, frame, expression, thread, *args):
-        interpackage = await self.rex(f"SLYNK:FRAME-PACKAGE-NAME {frame}", thread, *args)
+    async def debug_eval_in_frame(self, frame, expression, *args, **kwargs):
+        interpackage = await self.rex(f"SLYNK:FRAME-PACKAGE-NAME {frame}", *args, **kwargs)
         command = f'SLYNK:EVAL-STRING-IN-FRAME {dumps(expression)} {frame} "{str(interpackage)}"'
-        result = await self.rex(command, thread, *args)
+        result = await self.rex(command, *args, **kwargs)
         return str(result)
 
-    async def debug_step(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-STEP {frame}", thread, *args)
+    async def debug_step(self, frame, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-STEP {frame}", *args, **kwargs)
         return result
 
-    async def debug_next(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-NEXT {frame}", thread, *args)
+    async def debug_next(self, frame, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-NEXT {frame}", *args, **kwargs)
         return result
 
-    async def debug_out(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-OUT {frame}", thread, *args)
+    async def debug_out(self, frame, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-OUT {frame}", *args, **kwargs)
         return result
 
-    async def debug_break_on_return(self, frame, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-BREAK-ON-RETURN {frame}", thread, *args)
+    async def debug_break_on_return(self, frame, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-BREAK-ON-RETURN {frame}", *args, **kwargs)
         return result
 
-    async def debug_break(self, function_name, thread, *args):
-        result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", thread, *args)
+    async def debug_break(self, function_name, *args, **kwargs):
+        result = await self.rex(f"SLYNK:SLY-DB-BREAK {dumps(function_name)}", *args, **kwargs)
         return result
 
 # For the trace dialog:
 
-    async def tracer_toggle(self, function_name, *args) -> str:
+    async def tracer_toggle(self, function_name, *args, **kwargs) -> str:
         result = await self.rex(
             f"slynk-trace-dialog:dialog-toggle-trace (slynk::from-string {dumps(function_name)})",
-            *args)
+            *args, **kwargs)
         return result
 
-    async def tracer_trace(self, function_name, *args) -> str:
+    async def tracer_trace(self, function_name, *args, **kwargs) -> str:
         result = await self.rex(
             f"slynk-trace-dialog:dialog-trace (slynk::from-string {dumps(function_name)})",
-            *args)
+            *args, **kwargs)
         return result
 
-    async def tracer_untrace(self, function_name, *args):
+    async def tracer_untrace(self, function_name, *args, **kwargs):
         result = await self.rex(
             f"slynk-trace-dialog:dialog-untrace '{function_name}",
-            *args)
+            *args, **kwargs)
         return result
 
-    async def tracer_untrace_all(self, *args) -> Tuple[str, str]:
-        result = await self.rex("slynk-trace-dialog:dialog-untrace-all", *args)
+    async def tracer_untrace_all(self, *args, **kwargs) -> Tuple[str, str]:
+        result = await self.rex("slynk-trace-dialog:dialog-untrace-all", *args, **kwargs)
         return [(spec[0], str(spec[2])) for spec in result]
 
-    async def tracer_report_specs(self, *args) -> Tuple[str, str]:
-        result = await self.rex("slynk-trace-dialog:report-specs", *args)
+    async def tracer_report_specs(self, *args, **kwargs) -> Tuple[str, str]:
+        result = await self.rex("slynk-trace-dialog:report-specs", *args, **kwargs)
         return [(spec[0], str(spec[2])) for spec in result]
 
-    async def tracer_report_total(self, *args) -> int:
-        result = await self.rex("slynk-trace-dialog:report-total", *args)
+    async def tracer_report_total(self, *args, **kwargs) -> int:
+        result = await self.rex("slynk-trace-dialog:report-total", *args, **kwargs)
         return result       
 
-    async def tracer_clear(self, *args):
-        result = await self.rex("slynk-trace-dialog:clear-trace-tree", *args)
+    async def tracer_clear(self, *args, **kwargs):
+        result = await self.rex("slynk-trace-dialog:clear-trace-tree", *args, **kwargs)
         return result       
 
-    async def tracer_report_partial_tree(self, key, *args) -> Tuple[List[Trace], int, str]:
-        results = await self.rex(f"slynk-trace-dialog:report-partial-tree '{key}", *args)
+    async def tracer_report_partial_tree(self, key, *args, **kwargs) -> Tuple[List[Trace], int, str]:
+        results = await self.rex(f"slynk-trace-dialog:report-partial-tree '{key}", *args, **kwargs)
         traces = [Trace(result[0], result[1],
                         (result[2][0], str(result[2][2])),
                         [argument[1] for argument in result[3]],

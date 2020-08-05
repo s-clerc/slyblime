@@ -11,10 +11,9 @@ except ImportError as e:
 
 class Inspector:
     # not to be confused with `parse_inspection` in util.py
-    async def parse_inspection(self, result, *args):
+    async def parse_inspection(self, result, *args, **kwargs):
         if not result:
             return None
-        package = args[0] if len(args) > 0 else "COMMON-LISP-USER"
         inspection = InspectionData("", -1, [])
         raw_content = []
         for (key, value) in zip(result, result[1:]):
@@ -29,7 +28,7 @@ class Inspector:
         [content_description, content_length, content_start, content_end] = raw_content
 
         if content_end < content_length:
-            result_1 = await self.rex(f"SLYNK:INSPECTOR-RANGE {str(content_length)} {maxsize}", "T", package)
+            result_1 = await self.rex(f"SLYNK:INSPECTOR-RANGE {str(content_length)} {maxsize}", "T", *args, **kwargs)
             content_description_1 = result_1[0]
             if int(result_1[3]) <= int(result_1[1]):
                 raise Exception("Continues to miss part of the inspection")
@@ -46,12 +45,11 @@ class Inspector:
     async def eval_for_inspector(self, slyfun, *args, 
                                 thread="T",
                                 # Keyword arguments in the original
-                                 package=DEFAULT_PACKAGE,
                                  error_message="Inspection Failed",
                                  restore_point=None, 
                                  save_selected_window=False,
                                  current_inspector=None,
-                                 target_inspector=None):
+                                 target_inspector=None, **kwargs):
                             # (Due to encapsulation, opener is non-present)
         if not target_inspector:
             target_inspector = self.current_inspector
@@ -64,7 +62,7 @@ class Inspector:
             dumps(target_inspector),
             f"'{slyfun}", 
         ] + [dumps(element) for element in args])
-        result = await self.rex(query, thread, package)
+        result = await self.rex(query, thread, **kwargs)
         return result
 
     async def inspect(self, query, current_inspector=None, target_inspector=None, package=DEFAULT_PACKAGE):
@@ -117,16 +115,16 @@ class Inspector:
             current_inspector=current_inspector)
         return parse_inspection(result)
 
-    async def inspect_presentation(self, presentation_id, should_reset=False, *args):
+    async def inspect_presentation(self, presentation_id, should_reset=False, *args, **kwargs):
         should_reset = "T" if len(args) > 0 and args[0] else "NIL"
         inspection_result = await self.rex(f"SLYNK:INSPECT-PRESENTATION {str(presentation_id)} {dumps(should_reset)}",
-                                           ":REPL-THREAD", *args)
-        result = await self.parse_inspection(inspection_result, *args)
+                                           ":REPL-THREAD", *args, **kwargs)
+        result = await self.parse_inspection(inspection_result, *args, **kwargs)
         return result
 
-    async def inspect_frame_var(self, frame_index, variable, thread, *args):
-        inspection_result = await self.rex(f"SLYNK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args)
-        result = await parse_inspection(inspection_result, *args)
+    async def inspect_frame_var(self, frame_index, variable, thread, *args, **kwargs):
+        inspection_result = await self.rex(f"SLYNK:INSPECT-FRAME-VAR {str(frame_index)} {str(variable)}", thread, *args, **kwargs)
+        result = await parse_inspection(inspection_result, *args, **kwargs)
         return result
 
     async def inspect_in_frame(self, frame_index, expression_string, thread, target_inspector=None, current_inspector=None):

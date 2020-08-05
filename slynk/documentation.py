@@ -9,7 +9,7 @@ except ImportError as e:
     from structs import *
 
 class Documentation:
-    async def autodoc(self, expression_string, cursor_position, *args):
+    async def autodoc(self, expression_string, cursor_position, *args, **kwargs):
         expression = loads(expression_string)
         cursor_marker = Symbol("SLYNK::%CURSOR-MARKER%")
         try:
@@ -32,23 +32,23 @@ class Documentation:
             print(e)
             return Symbol(":NOT-AVAILABLE")
         else:
-            response = await self.rex(command, *args)
+            response = await self.rex(command, *args, **kwargs)
             return response[0] if len(response) > 1 else Symbol(":NOT-AVAILABLE")
 
     # defslyfuns
-    async def describe(self, expression_string: str,  mode="symbol", *args):
-        result = await self.rex(f"SLYNK:DESCRIBE-{mode.upper()} {dumps(expression_string)}", *args)
+    async def describe(self, expression_string: str,  mode="symbol", *args, **kwargs):
+        result = await self.rex(f"SLYNK:DESCRIBE-{mode.upper()} {dumps(expression_string)}", *args, **kwargs)
         return result
         
     # A defslyfun
-    async def documentation_symbol(self, symbol_name):
+    async def documentation_symbol(self, symbol_name, *args, **kwargs):
         documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"')
         return documentation
 
     # A defslyfun
-    async def apropos(self, pattern, external_only=True, case_sensitive=False, *args):
+    async def apropos(self, pattern, external_only=True, case_sensitive=False, *args, **kwargs):
         command = f"slynk-apropos:apropos-list-for-emacs {dumps(pattern)} {dumps(external_only)} {dumps(case_sensitive)}"
-        propos_list = await self.rex(command, "T", *args)
+        propos_list = await self.rex(command, "T", *args, **kwargs)
         x = [property_list_to_dict(plist) for plist in propos_list]
         return x
 
@@ -59,8 +59,8 @@ class Documentation:
         return [Completion(*completion[:-1], completion[3].split(","))
                 for completion in response[0]]
 
-    async def find_definitions(self, function_name, *args):
-        raw_definitions = await self.rex(f"SLYNK:FIND-DEFINITIONS-FOR-EMACS {dumps(function_name)}", "T", *args)
+    async def find_definitions(self, function_name, *args, **kwargs):
+        raw_definitions = await self.rex(f"SLYNK:FIND-DEFINITIONS-FOR-EMACS {dumps(function_name)}", "T", *args, **kwargs)
         definitions = []
         for raw_definition in raw_definitions:
             try:

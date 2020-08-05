@@ -48,7 +48,7 @@ class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
         if data is None:
             return
         packet_size = int(data[0:6].decode("utf-8"), 16)
-        # print(data)
+        print(data)
         self.emit("reception", data[6:packet_size + 6])
 
         remainder = data[packet_size + 6:]
@@ -65,4 +65,4 @@ class SlynkClientProtocol(Dispatcher, asyncio.Protocol):
         length = str(hex(len(output)))[2:].zfill(6).upper()
         buffer = length.encode("utf-8") + output
         self.transport.write(buffer)
-        # print(buffer)
+        print(buffer)

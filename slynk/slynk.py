@@ -33,7 +33,8 @@ class SlynkClient(
         "read_string",
         "read_aborted",
         "profile_command_complete",  # only present for completeness, avoid using
-        "disconnect"
+        "disconnect",
+        "indentation_update"
     ]
 
     def __init__(self, host, port, *args, **kwargs):
@@ -227,16 +228,14 @@ class SlynkClient(
         # await self.rex("SLYNK-REPL:CREATE-REPL NIL :CODING-SYSTEM \"utf-8-unix\"", "T", "COMMON-LISP-USER")
         return
 
-    async def eval(self, expression_string, is_region, *args):
-        package = (args[0] if len(args) > 0 and args[0] is not None 
-                           else "COMMON-LISP-USER")
+    async def eval(self, expression_string, is_region, *args, **kwargs):
         mode = "-REGION" if is_region else ""
         command = f"SLYNK:INTERACTIVE-EVAL{mode} {dumps(expression_string)}"
-        result = await self.rex(command, "T", package)
+        result = await self.rex(command, "T", *args, **kwargs)
         return result
 
     async def compile_string(self, string, buffer_name, file_name, position, stickers=None,
-                             compilation_policy="'NIL", package=DEFAULT_PACKAGE):
+                             compilation_policy="'NIL", *args, **kwargs):
         if type(position) == tuple and len(position) > 2:
             position = f"(:POSITION {position[0]}) (:LINE {position[1]} {position[2]})"
         else:
@@ -252,7 +251,7 @@ class SlynkClient(
                dumps(file_name),
                str(compilation_policy)])
   
-        result = await self.rex(command, "T", package)
+        result = await self.rex(command, "T", *args, **kwargs)
 
         if stickers:
             stickers_stuck = result[0]
@@ -265,18 +264,18 @@ class SlynkClient(
             return result, stickers_stuck
         return result
 
-    async def compile_file(self, file_name, should_load=True, *args):
-        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(should_load)}", "T", *args)
+    async def compile_file(self, file_name, should_load=True, *args, **kwargs):
+        result = await self.rex(f"SLYNK:COMPILE-FILE-FOR-EMACS {dumps(file_name)} {dumps(should_load)}", "T", *args, **kwargs)
         # result is (:compilation-result notes success duration load? output-pathname)
         indication = str(result[0]).lower()
         if indication == ":compilation-result":
             result = parse_compilation_information(result)
             if should_load and (result.success or should_load == "always") and result.path:
-                await self.load_file(result.path, *args)
+                await self.load_file(result.path, *args, **kwargs)
         return result
 
-    async def load_file(self, file_name, *args):
-        result = await self.rex(f"SLYNK:LOAD-FILE {dumps(file_name)}", "T", *args)
+    async def load_file(self, file_name, *args, **kwargs):
+        result = await self.rex(f"SLYNK:LOAD-FILE {dumps(file_name)}", "T", *args, **kwargs)
         return result
 
     def interrupt(self):
@@ -318,29 +317,29 @@ class SlynkClient(
         self.connexion_info = await self.get_connexion_info()
         return self.connexion_info
 
-    async def toggle_sticker_breaking(self, *args):
-        result = await self.rex("slynk-stickers:toggle-break-on-stickers", *args)
+    async def toggle_sticker_breaking(self, *args, **kwargs):
+        result = await self.rex("slynk-stickers:toggle-break-on-stickers", *args, **kwargs)
         return result
 
     async def sticker_recording(self, key: str, ignored_ids: List[int], 
             should_ignore_zombies=False, zombies: List[int] = [], direction: int = 0, 
-            command: str = "nil", *args):
+            command: str = "nil", *args, **kwargs):
         result = await self.rex(
             f"""slynk-stickers:search-for-recording 
                 '{key} '{dumps(ignored_ids)} '{dumps(should_ignore_zombies)} 'nil {direction} '{command}""",
-            *args)
+            *args, **kwargs)
         return result
 
-    async def sticker_fetch(self, dead_stickers: List[int], *args):
+    async def sticker_fetch(self, dead_stickers: List[int], *args, **kwargs):
         result = await self.rex(f"slynk-stickers:fetch '{dumps(dead_stickers)}")
         return result
 
-    async def disassemble(self, symbol, *args):
-        result = await self.rex(f"slynk:disassemble-form {dumps(symbol)}", *args)
+    async def disassemble(self, symbol, *args, **kwargs):
+        result = await self.rex(f"slynk:disassemble-form {dumps(symbol)}", *args, **kwargs)
         return result
 
-    async def xref(self, symbol: str, mode="calls", *args) -> List[Tuple[str, Location]]:
-        result = await self.rex(f"""slynk:xref ':{mode} '"{symbol}\"""", *args)
+    async def xref(self, symbol: str, mode="calls", *args, **kwargs) -> List[Tuple[str, Location]]:
+        result = await self.rex(f"""slynk:xref ':{mode} '"{symbol}\"""", *args, **kwargs)
         return [(name, parse_location(location)) for name, location in result]
 
 class TestListener:
