@@ -90,6 +90,7 @@ class ConnexionInformation:
     modules: List[str] = None
     package: str = None
     version: str = None
+    indentation: List[List[Union[str, list, int]]] = None
 
 
 @dataclass
