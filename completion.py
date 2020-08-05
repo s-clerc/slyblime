@@ -111,7 +111,7 @@ class SlyCompletionListener(sublime_plugin.EventListener):
             completions = asyncio.run_coroutine_threadsafe(
                 session.slynk.completions(
                     pattern,
-                    util.current_package(view)), 
+                    util.current_package(view) or "COMMON-LISP-USER"), 
                 session.loop).result(sly.settings().get("maximum_timeout"))
         except Exception as e:
             session.window.status_message(f"Failed to fetch completion for {pattern}")
@@ -130,7 +130,7 @@ class SlyCompletionInfoCommand(sublime_plugin.TextCommand):
         session = sly.sessions.get_by_window(self.view.window())
         if session is None: 
             return
-        docs = await session.slynk.documentation_symbol(completion)
+        docs = await session.slynk.documentation_symbol(completion, util.current_package(self.view))
         docs = escape(docs).replace("\n", "<br>")
         self.view.show_popup(str(docs), COOPERATE_WITH_AUTO_COMPLETE)
 

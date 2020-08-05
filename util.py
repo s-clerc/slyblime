@@ -104,13 +104,15 @@ def current_package(view, point=None, return_region=False):
         region = find_closest_before_point(view, point, PACKAGE_REGEX)
         # Remove the IN-PACKAGE symbol.
         if region is None: 
-            if return_region: return None, None 
+            if return_region: 
+                return None, None 
             return None
 
         info = IN_PACKAGE_REGEX.sub("", view.substr(region)[1:-1])
 
         if return_region:
             return info, region
+        return info
 
 
 def compute_flags(flags):
