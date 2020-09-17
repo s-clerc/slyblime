@@ -145,8 +145,8 @@ class EventBasedReplView(sublimerepl.ReplView):
         self.backtrack_phantom_set.update([])
 
 
-async def create_main_repl(session):
-    window = session.window
+async def create_main_repl(session, window=None):
+    window = window or session.window
     slynk = session.slynk
     # Mostly copy and pasted from sublimeREPL.sublimerepl.ReplManager
     try:
@@ -319,14 +319,15 @@ class SlyOpenReplCommand(sublime_plugin.WindowCommand):
         repl_view = await repl_choice(loop, self.window, session)
         if repl_view is None: return
         if repl_view == "new-repl":
-            repl_view = await create_main_repl(session)
+            repl_view = await create_main_repl(session, self.window)
         elif not repl_view.playing:
             thaw_repl(self.window.new_file(), repl_view)
 
         view = repl_view._view
+        window = view.window()
         util.set_status(view, session)
-        self.window.focus_view(view)
-        self.window.bring_to_front()
+        window.focus_view(view)
+        window.bring_to_front()
 
       except Exception as e:
         print(f"SlyOpenReplCommandException: {e}")
