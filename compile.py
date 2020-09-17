@@ -139,12 +139,18 @@ async def handle_compilation_results(window, path, result, load=None):
                     window.status_message("Loading cancelled due to unsuccessful compilation")
             elif result.load == False:
                 window.status_message("Compilation encountered at least one error")
-            if settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
-                show_notes_as_regions(window, path, result)
-            else: 
-                show_notes_view(window, path, name, result)
-        elif len(result.notes) and settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
+        else:
+            if result.load == False:
+                window.status_message("Compilation successful")
+            else:
+                window.status_message("Compilation successful and loading completed")
+        
+        if not result.notes:
+            pass
+        elif settings().get("compilation")["notes_view"]["prefer_integrated_notes"]:
             show_notes_as_regions(window, path, result)
+        else: 
+            show_notes_view(window, path, name, result)
     except Exception as e:
         print(result)
         print(f"Compilation Error Unknown {e}")
