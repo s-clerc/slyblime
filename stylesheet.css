@@ -12,7 +12,6 @@
 
 
 .sly.button a {
-    display: inline-block;
     background-color: var(--accent);
     color: color(var(--background) min-contrast(var(--foreground) 4.5));
     padding: 0.15rem;
@@ -26,7 +25,6 @@
 
 /* Checkboxes */
 .sly.checkbox {
-    display: inline-block;
     border-radius: 5px;
     background-color: var(--cyanish);
     color: var(--background);
