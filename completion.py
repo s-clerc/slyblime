@@ -130,7 +130,7 @@ class SlyCompletionInfoCommand(sublime_plugin.TextCommand):
         session = sly.sessions.get_by_window(self.view.window())
         if session is None: 
             return
-        docs = await session.slynk.documentation_symbol(completion, util.current_package(self.view))
+        docs = await session.slynk.documentation_symbol(completion, package=util.current_package(self.view))
         docs = escape(docs).replace("\n", "<br>")
         self.view.show_popup(str(docs), COOPERATE_WITH_AUTO_COMPLETE)
 
