@@ -44,6 +44,8 @@ class Debugger(ui.UIView):
             H2[escape(data.title)],
             H3[escape(data.type), " in thread ", escape(str(data.thread))],
             X.BUTTON(href=self.url({"action": "inspect-condition"}))["Inspect condition"], " ",
+            X.BUTTON(href=self.url({"action": "copy-condition"}))["Copy condition"], " ",
+            X.BUTTON(href=self.url({"action": "copy-all"}))["Copy all"], " ",
             H4["Restarts"],
             (restarts := OL(start="0")),
             H4["Backtrace"],
@@ -155,6 +157,8 @@ class Debugger(ui.UIView):
                     self.data.thread)
             except Exception as e:
                 self.window.status_message(str(e))
+        elif "copy" in action:
+            set_clipboard(self.as_text(frames = "all" in action))
         else:
             if action == "eval-frame":
                 result = await slynk.debug_eval_in_frame(
@@ -200,4 +204,19 @@ class Debugger(ui.UIView):
       except Exception as e:
         print("return failure", e)
 
+    def as_text(self, data=None, condition=True, restarts=True, frames=True):
+        data = data or self.data
+        result = ""
+        if condition:
+            result = f"{data.title}\n{data.type} in thread {data.thread}\n"
+        if restarts:
+            result += "Restarts:\n"
+            for index, restart in enumerate(data.restarts):
+                [label, description, *__] =  restart
+                result += f"\t【{index}】{label}: {description}\n"
+        if frames:
+            result += "Backtrace\n:"
+            for frame in data.stack_frames:
+                result += f"\t【{frame.index}】{frame.description}\n"
+        return result
 
