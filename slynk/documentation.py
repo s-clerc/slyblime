@@ -42,7 +42,7 @@ class Documentation:
         
     # A defslyfun
     async def documentation_symbol(self, symbol_name, *args, **kwargs):
-        documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"')
+        documentation = await self.rex(f'SLYNK:DOCUMENTATION-SYMBOL "{symbol_name}"', *args, **kwargs)
         return documentation
 
     # A defslyfun
