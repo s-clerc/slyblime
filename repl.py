@@ -241,7 +241,7 @@ class SlyReplListener(sublime_plugin.EventListener):
 
     def on_selection_modified(self, view):
         if view.settings().get("enable-test"):
-            #view.run_command("show_scope_name")
+            view.run_command("show_scope_name")
             view.add_regions("test", [util.find_containing_form(view) or Region(0,0)], "region.greenish")
         self.on_modified(view)
 
