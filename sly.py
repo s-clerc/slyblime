@@ -15,9 +15,10 @@ _settings = None
 
 SessionId = int
 WindowId = int
+
 def settings():
     global _settings
-    if "_settings" not in globals():
+    if not ("_settings" in globals() and globals()["_settings"]):
         _settings = load_settings("sly.sublime-settings")
     return _settings
 
