@@ -127,7 +127,7 @@ class Tracer(ui.UIView):
             traces, remainder, __ = await self.slynk.tracer_report_partial_tree(
                 f"sublime-sly-tracer-{self.id}")
             self.traces += traces
-            self.output_element[0] += self.render_as_tree(traces)
+            self.output_element[0] += "<br>" + self.render_as_tree(traces)
 
     async def erase_output(self):
         self.output_element[0] = " "
@@ -140,8 +140,8 @@ class Tracer(ui.UIView):
                     await self.slynk.tracer_trace(
                         await show_input_panel(loop, self.window, "Function for tracing", "")))
             elif "all" in action:
-                await self.slynk.tracer_untrace_all(self.tracees[index][1])
-            elif index:
+                await self.slynk.tracer_untrace_all()
+            elif index is not None:
                 await self.slynk.tracer_untrace(self.tracees[index][1])
             await self.refresh_tracees()
         elif action == "delete-output":
@@ -152,9 +152,6 @@ class Tracer(ui.UIView):
             await self.fetch("all")
         elif action == "fetch-next":
             await self.fetch()
-        #TEMP REMOVE BELOW WHEN POSSIBLE
-        elif action == "refresh-output" and len(self.traces) > 0:
-            self.output_element[0] = self.render_as_tree(self.traces)
         elif action == "inspect":
             inspector = get_inspector(self.session, self.window, switch=True)
             await inspector.inspect_trace(trace_id, term_index, is_input_value)
