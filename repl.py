@@ -95,6 +95,9 @@ class EventBasedReplView(sublimerepl.ReplView):
         self.write(self.prevent_double_newline(str(message)))
 
     def on_write_values(self, values, *args):
+        # If there is nothing, we don't want to add an empty value grop
+        if len(values) < 1:
+            return
         phantom_group_index = len(self.value_phantom_groups)
         phantoms = []
         for value_index, value in enumerate(values):
