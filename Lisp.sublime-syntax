@@ -28,12 +28,23 @@ contexts:
     - include: numbers
     - include: constants
     - include: strings
+    - include: enclosed-symbol
     - include: variables
     - include: control
     - include: functions
     - include: operators
-    - include: variables
     - include: keywords
+
+  enclosed-symbol:
+    - match: \|
+      scope: punctuation.definition.symbol.begin.lisp
+      push:
+        - meta_scope: symbol.enclosed.lisp
+        - match: \\.
+          scope: constant.character.escape.lisp
+        - match: \||\n
+          scope: punctuation.definition.symbol.end.lisp
+          pop: true
 
   variables:
     - match: (\*)(?i:trace-output|terminal-io|suppress-series-warnings|standard-output|standard-input|readtable|read-suppress|read-eval|read-default-float-format|read-base|random-state|query-io|print-right-margin|print-readably|print-radix|print-pretty|print-pprint-dispatch|print-miser-width|print-lines|print-level|print-length|print-gensym|print-escape|print-circle|print-case|print-base|print-array|package|modules|macroexpand-hook|load-verbose|load-truename|load-print|load-pathname|gensym-counter|features|evalhook|error-output|default-pathname-defaults|debugger-hook|debug-io|compile-verbose|compile-print|compile-file-truename|compile-file-pathname|break-on-warnings|break-on-signals|applyhook)(\*)
@@ -128,7 +139,7 @@ contexts:
     - include: block-comment
     - match: '\|#'
       scope: invalid.illegal.stray-comment-end.lisp
-    - match: (;).*$\n?
+    - match: (?<!\\)(;).*$\n?
       scope: comment.line.semicolon.lisp
       captures:
         1: punctuation.definition.comment.lisp
