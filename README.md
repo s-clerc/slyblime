@@ -15,7 +15,7 @@
 
 [![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U11ZLB8)
 
-Slyblime is Sylvester the Cat's Common Lisp IDE for Sublime Text 4:
+Slyblime is Sylvester the Cat's Common Lisp IDE for **Sublime Text 4**:
 
 Slyblime is an implementation of [SLY](https://github.com/joaotavora/sly) and uses the same backend (SLYNK).
 
