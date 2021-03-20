@@ -70,8 +70,12 @@ class SlynkSession:
         self.window.status_message("Slynk connexion lost")
         print("Slynk connexion lost")
         if self.autoclose and self.process:
-            self.process.terminate()
-            self.window.status_message("Inferior lisp terminated")
+            try:
+                self.process.terminate()
+                self.window.status_message("Inferior lisp terminated")
+            except Exception as e:
+                self.window.status_message(f"Failed to terminate process, now orphaned: {e}")
+                sessions.orphaned_inferior_lisps.append(self)
         elif self.process:
             sessions.orphaned_inferior_lisps.append(self)
 
