@@ -20,6 +20,9 @@ def prepare_preview(session):
 
 
 async def session_choice(loop, window):
+    if len(sessions.list) == 0:
+        window.status_message("No active Slynk connexions")
+        return
     try:
         default_session_index = 0 
         default_session_id = sessions.get_by_window(window, False, False).id
@@ -41,6 +44,9 @@ async def session_choice(loop, window):
 
 class SelectSessionCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
+        if not loop.is_running():
+            self.window.status_message("Connect to a Lisp instance first!")
+            return
         asyncio.run_coroutine_threadsafe(
             self.async_run(**kwargs),
             loop)
@@ -54,6 +60,9 @@ class SelectSessionCommand(sublime_plugin.WindowCommand):
 
 class CloseSessionCommand(sublime_plugin.WindowCommand):
     def run(self, **kwargs):
+        if not loop.is_running():
+            self.window.status_message("Connect to a Lisp instance first!")
+            return
         asyncio.run_coroutine_threadsafe(
             self.async_run(**kwargs),
             loop)

@@ -60,12 +60,12 @@ class SlynkSession:
         #await slynk.closed()
 
     def on_connect(self, *args):
-        self.window.status_message("SLYNK connexion established")
-        print("SLYNK connexion established")
+        self.window.status_message("Slynk connexion established")
+        print("Slynk connexion established")
 
     def on_disconnect(self, *args):
-        self.window.status_message("SLYNK connexion lost")
-        print("SLYNK connexion lost")
+        self.window.status_message("Slynk connexion lost")
+        print("Slynk connexion lost")
 
     async def on_debug_setup(self, data):
         if data.thread in self.debuggers:
