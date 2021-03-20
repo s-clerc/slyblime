@@ -263,8 +263,8 @@ def prepare_preview(repl_view: EventBasedReplView):
     slynk = repl_view.session.slynk
     lisp = slynk.connexion_info.lisp_implementation
 
-    try: port_info = slynk.host + ":" + slynk.port + " on " + slynk.connexion_info.machine.instance
-    except: port_info = "??.??.??:????"
+    try: port_info = f"{slynk.host}:{slynk.port} on {slynk.connexion_info.machine.instance}"
+    except: port_info = "Error fetching connexion information"
 
     if repl_view.playing:
         repl_info = "REPL currently open, select to switch."
