@@ -8,13 +8,13 @@ def prepare_preview(session):
     lisp = slynk.connexion_info.lisp_implementation
 
     try: lisp_info = lisp.name + " " + lisp.version
-    except e: lisp_info = "Error determining name"
+    except: lisp_info = "Error determining name"
 
     try: port_info = slynk.host + ":" + slynk.port + " on " + slynk.connexion_info.machine.instance
-    except e: port_info = "Error determining connexion information"
+    except: port_info = "Error determining connexion information"
 
     try: repl_info = str(len(session.repl_views)) + " REPLs opened"
-    except e: repl_info = "Unknown number of open REPLs"
+    except: repl_info = "Unknown number of open REPLs"
 
     return [lisp_info, port_info, repl_info]
 
