@@ -3,7 +3,7 @@ import sublime_plugin, asyncio
 from .sly import *
 from . import util
 
-def prepare_preview(session):
+def prepare_preview(session, show_repls=True):
     slynk = session.slynk
     lisp = slynk.connexion_info.lisp_implementation
 
@@ -12,11 +12,13 @@ def prepare_preview(session):
 
     try: port_info = f"{slynk.host}:{slynk.port} on {slynk.connexion_info.machine.instance}"
     except: port_info = "Error determining connexion information"
+    # We want to hide this for orphaned processes
+    if show_repls:
+        try: repl_info = f"{len(session.repl_views)} REPLs opened"
+        except: repl_info = "Unknown number of open REPLs"
 
-    try: repl_info = f"{len(session.repl_views)} REPLs opened"
-    except: repl_info = "Unknown number of open REPLs"
-
-    return [lisp_info, port_info, repl_info]
+        return [lisp_info, port_info, repl_info]
+    return [lisp_info, port_info]
 
 
 async def session_choice(loop, window):
@@ -91,4 +93,34 @@ def set_status(view):
             view, 
             sessions.get_by_window(view.window(), indicate_failure=False))
 
+class SlyCloseProcessCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs):
+        if not loop.is_running():
+            self.window.status_message("Connect to a Lisp instance first!")
+            return
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(**kwargs),
+            loop)
+        set_status(self.window.active_view())
+
+    async def async_run(self, current=False):
+        orphaned_lisps = sessions.orphaned_inferior_lisps
+        if not len(orphaned_lisps):
+            self.window.status_message("No orphaned inferior lisps processes")
+            return
+
+        choice = await util.show_quick_panel(
+            loop, self.window,
+            [prepare_preview(session, False) 
+                for session in orphaned_lisps],
+            0, 0)
+        if choice is None:
+            return
+            
+        try:
+            orphaned_lisps[choice].process.terminate()
+            self.window.status_message("Process terminated")
+            del orphaned_lisps[choice]
+        except Exception as e:
+            self.window.status_message(f"Failed to terminate process: {e}")
 
