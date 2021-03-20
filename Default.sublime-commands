@@ -21,7 +21,7 @@
         }
     },
     {
-        "caption": "Sly: Close current slynk session",
+        "caption": "Sly: Close current Slynk connexion",
         "command": "close_session",
         "args": {
             "current": true
@@ -63,7 +63,7 @@
         "command": "close_session"
     },
     {
-        "caption": "Sly: Open an inferior Lisp REPL",
+        "caption": "Sly: Open a Lisp REPL (current connexion)",
         "command": "sly_open_repl"
     },
     {
@@ -115,6 +115,10 @@
     {
         "caption": "Sly: Downgrade SublimeREPL to the original version of Python",
         "command": "sly_downgrade_sublime_repl"
+    },
+    {
+        "caption": "Sly: Start and connect to an inferior Lisp instance",
+        "command": "sly_start_lisp"
     },
     {   "caption": "Sly: Path to the bundled copy of Slynk",
         "command": "sly_show_slynk_starter_url"

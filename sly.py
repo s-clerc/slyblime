@@ -9,6 +9,7 @@ from .slynk import slynk
 from .tracer import Tracer
 import logging
 import functools
+from socket import socket
 from typing import *
 
 _settings = None
@@ -48,6 +49,8 @@ class SlynkSession:
         self.debuggers = {}
         self.tracer = None
         self.id: SessionId = None
+        self.autoclose = False
+        self.process = None
 
     async def connect(self):
         slynk = self.slynk
@@ -66,6 +69,9 @@ class SlynkSession:
     def on_disconnect(self, *args):
         self.window.status_message("Slynk connexion lost")
         print("Slynk connexion lost")
+        if self.autoclose and self.process:
+            self.process.terminate()
+            self.window.status_message("Inferior lisp terminated")
 
     async def on_debug_setup(self, data):
         if data.thread in self.debuggers:
@@ -128,6 +134,64 @@ class ConnectSlynkCommand(sublime_plugin.WindowCommand):
         await session.connect()
         sessions.add(session)
         sessions.set_by_window(self.window, session)
+
+
+class SlyStartLispCommand(sublime_plugin.WindowCommand):
+    def run(self, **kwargs): 
+        global loop
+        if not loop.is_running():
+            threading.Thread(target=loop.run_forever).start()
+        asyncio.run_coroutine_threadsafe(
+            self.async_run(**kwargs),
+            loop)
+
+    async def async_run(self, **kwargs):  # implement run method
+        try:
+          global loop
+          params = settings().get("inferior_lisp_process")
+          """
+          Trick to get an avaliable port
+          Note however, there is a small race condition possible between 
+          getting the port and starting Slynk.
+          """
+          with socket() as s:
+              s.bind(('',0))
+              port = s.getsockname()[1]
+          session = SlynkSession("localhost", port, self.window, loop)
+          session.autoclose = params["autoclose"]
+  
+          session.process = await asyncio.create_subprocess_shell(
+              " ".join(params["command"]),
+              stdin=asyncio.subprocess.PIPE
+              #, stdout=asyncio.subprocess.PIPE # debug
+              )
+  
+          session.process.stdin.write("(print :test)".encode())
+          session.process.stdin.write( # Hate the trick below btw
+              f"""(load "{packages_path()}/{__name__.split('.')[0]
+                  }/sly/slynk/slynk-loader.lisp")""".encode())
+          await asyncio.sleep(params["loading_time"])
+  
+          session.process.stdin.write(
+              f"""
+              (slynk-loader:init
+                  :delete nil       
+                  :reload nil)
+              (slynk:create-server :port {port}
+                                   :dont-close {"nil" if params["autoclose"] else "t"})
+              """.encode())
+          await asyncio.sleep(params["setup_time"])
+  
+          await session.connect()
+          sessions.add(session)
+          sessions.set_by_window(self.window, session)
+        except Exception as e:
+          self.window.status_message(f"Failed to start Lisp process {e}")
+          print(e)
+
+    async def log_all(self, p):
+        while True:
+            print(await p.stdout.readline())
 
 
 class Sessions:
