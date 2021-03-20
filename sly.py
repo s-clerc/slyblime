@@ -161,7 +161,7 @@ class Sessions:
                     if view := window.active_view(): 
                         view.set_status("slynk", "")
                     window.status_message("Slynk session disconnected and unassigned")
-                except e:
+                except Exception as e:
                     print(f"Error with status message: {e}")
 
     def get_by_window_id(self, id: WindowId):
@@ -173,7 +173,7 @@ class Sessions:
         if autoset is None:
             try:
                 autoset = settings().get("autoset_slynk_connexion")
-            except e:
+            except Exception as e:
                 autoset = True
         id: WindowId = window.id()
         if id in self.window_assignment:
