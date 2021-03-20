@@ -1,6 +1,12 @@
 { "autoset_slynk_connexion": true,
   "maximum_timeout": 0.2,
   "line_offset": 1,
+  "inferior_lisp_process": {
+    "command": ["lisp"],
+    "autoclose": true,
+    "loading_time": 2,
+    "setup_time": 1
+  },
   "default_connexion_parameters": {
     "hostname": "localhost",
     "port": 4005
