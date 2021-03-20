@@ -122,5 +122,8 @@
     },
     {   "caption": "Sly: Path to the bundled copy of Slynk",
         "command": "sly_show_slynk_starter_url"
+    },
+    {   "caption": "Sly: Close orphaned inferior lisp instances",
+        "command": "sly_close_process"
     }
 ]

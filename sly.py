@@ -72,6 +72,9 @@ class SlynkSession:
         if self.autoclose and self.process:
             self.process.terminate()
             self.window.status_message("Inferior lisp terminated")
+        elif self.process:
+            sessions.orphaned_inferior_lisps.append(self)
+
 
     async def on_debug_setup(self, data):
         if data.thread in self.debuggers:
@@ -203,6 +206,7 @@ class Sessions:
         self.sessions = sessions
         self.window_assignment = window_assignment
         self.next_uid: SessionId = 0
+        self.orphaned_inferior_lisps = []
 
     @property
     def list(self):
