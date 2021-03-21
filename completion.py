@@ -106,16 +106,19 @@ class SlyCompletionListener(sublime_plugin.EventListener):
         # Failure will not be indicated because it would be incredibly annoying otherwise
         session = sly.sessions.get_by_window(view.window(), indicate_failure=False)
         if session is None: return
-
+        pattern = util.symbol_at_point(view)
+        if not pattern: 
+            return
         try:
             completions = asyncio.run_coroutine_threadsafe(
                 session.slynk.completions(
                     pattern,
                     util.current_package(view) or "COMMON-LISP-USER"), 
                 session.loop).result(sly.settings().get("maximum_timeout"))
+            #print(completions)
         except Exception as e:
             session.window.status_message(f"Failed to fetch completion for {pattern}")
-            print(f"Completion fetch exception: {e}")
+            print(f"Completion fetch exception: [{pattern}] {e}")
             return
         return ([create_completion_item(completion, classifier) for completion in completions],
                 INHIBIT_WORD_COMPLETIONS|INHIBIT_EXPLICIT_COMPLETIONS|DYNAMIC_COMPLETIONS)
