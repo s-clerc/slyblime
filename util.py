@@ -93,9 +93,8 @@ IN_PACKAGE_REGEX = re.compile(r"(?i)(cl:|common-lisp:)?in-package\ +[ \t']*")
 # Equivalent to Sly Current Package
 def current_package(view, point=None, return_region=False):
     settings = view.settings()
-    if settings.get("sly-repl") and (package := settings.get("package")):
+    if settings.get("is-sly-repl") and (package := settings.get("package")):
         if return_region:
-            # TODO: Find a way to get the region before the prompt and indicate as package
             return package, Region(settings.get("prompt-region")[0], settings.get("prompt-region")[1])
         return package
     else:
