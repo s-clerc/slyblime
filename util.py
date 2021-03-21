@@ -303,6 +303,10 @@ SYMBOL_ENDING_CHARACTERS = re.compile(r"""([ ()"']|\\)""")
 """
 Once I get around to rewriting the grammar this can be replaced by a simple
 extract scope as all symbols (even non-enclosed) will be scoped properly.
+
+This is technically imperfect as when we have something like `test\⁁'test`
+it will return ["", ""] but this is good enough in my opinion. (⁁ is the 
+point).
 """
 def symbol_at_point(view, point:int=None, seperated=False) -> Union[List[str], str]:
     if point is None:
@@ -336,45 +340,57 @@ def symbol_at_point(view, point:int=None, seperated=False) -> Union[List[str], s
 
     for __ in range(50):
         if not is_left_at_end:
-            left_position -= 1
-            left = view.substr(left_position)
             if left_position == 0: 
                 is_left_at_end = True
 
-            is_symbol_ending = SYMBOL_ENDING_CHARACTERS.match(left)
-            if left_needs_escape:
-                if left == "\\":
-                    left_needs_escape = False
+            word_region = Region(view.word(left_position).begin(), left_position)
+            if not left_needs_escape and len(word_region) > 1:
+                left_side = view.substr(word_region) + left_side
+                left_position = word_region.begin()
+            else:
+                left_position -= 1
+                left = view.substr(left_position)
+                is_symbol_ending = SYMBOL_ENDING_CHARACTERS.match(left)
+                if left_needs_escape:
+                    if left == "\\":
+                        left_needs_escape = False
+                        left_side = left + left_side
+                    else:
+                        left_side = left_side[1:]
+                        is_left_at_end = True
+                elif is_symbol_ending and left_position != 0:
+                    left_needs_escape = True
                     left_side = left + left_side
                 else:
-                    left_side = left_side[1:]
-                    is_left_at_end = True
-            elif is_symbol_ending and left_position != 0:
-                left_needs_escape = True
-                left_side = left + left_side
-            else:
-                left_side = left + left_side
+                    left_side = left + left_side
 
         if not is_right_at_end:
-            right_position += 1
-            right = view.substr(right_position)
             if right_position+1 == size:
                 is_right_at_end = True
-
-            is_symbol_ending = SYMBOL_ENDING_CHARACTERS.match(right)
-            if is_symbol_ending:
-                if right_can_escape:
+            word_region = Region(right_position+1, view.word(right_position).end())
+            if not right_can_escape and len(word_region) > 1:
+                right_side += view.substr(word_region)
+                right_position = word_region.end()-1
+            else:
+                right_position += 1
+                right = view.substr(right_position)
+    
+                is_symbol_ending = SYMBOL_ENDING_CHARACTERS.match(right)
+                if is_symbol_ending:
+                    if right_can_escape:
+                        right_side += right
+                        right_can_escape = False
+                    elif right == "\\":
+                        right_side += right
+                        right_can_escape = True
+                    else:
+                        is_right_at_end = True
+                else:
                     right_side += right
                     right_can_escape = False
-                elif right == "\\":
-                    right_side += right
-                    right_can_escape = True
-                else:
-                    is_right_at_end = True
-            else:
-                right_side += right
-
+    
         if is_left_at_end and is_right_at_end:
+            print(__)
             if seperated:
                 return [left_side, right_side]
             return left_side+right_side
