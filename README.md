@@ -17,7 +17,7 @@
 
 Slyblime is Sylvester the Cat's Common Lisp IDE for **Sublime Text 4**:
 
-Slyblime is an implementation of [SLY](https://github.com/joaotavora/sly) and uses the same backend (SLYNK).
+Slyblime is an implementation of [SLY](https://github.com/joaotavora/sly) and uses the same backend (SLYNK). 
 
 Currently it includes:
 
@@ -33,6 +33,19 @@ Currently it includes:
 
 The primary missing feature is the ability to use stickers from Sly.
 
+## Installation
+First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
+Use Package Control to install it, or download and unzip this plugin in your packages folder.
+Then to get started just run `Sly: Start and connect to an inferior Lisp instance` in the command palette (you may need to change the default lisp program in the settings).
+
+## Obligatory animated GIFs section
+Flex Completion
+
+![Flex Completion](./docs/animations/completion.gif)
+
+Backreferences
+
+![Backreferences](./docs/animations/backreference.gif)
 
 ## Usage
 
@@ -45,13 +58,10 @@ After that run `Sly: Start and connect to an inferior Lisp instance` to start a 
 To connect to a Slynk instance run `Sly: Connect to slynk` using the command palette.
 Make sure to use the included `Lisp+` syntax for all the features to work correctly.
 
-## Installation
-First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
-Either download the file and unzip it in ST's packages folder or just use Package Control to install it.
 
 ## Copying
 
-See [COPYING.md](COPYING.md)
+See [COPYING.md](COPYING.md), but tl;dr GPL.
 
 ## Contributing
 
