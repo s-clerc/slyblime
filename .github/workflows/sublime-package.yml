@@ -1,0 +1,76 @@
+name: Sublime Package
+on: 
+  release:
+    types: [published]
+
+jobs:
+  autopackage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo content
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          path: current-repo
+          fetch-depth: 0
+          submodules: recursive
+      - name: Configure git # run the run.py to get the latest data
+        working-directory: ./current-repo
+        run: |
+          git config --global user.email "auto@example.com"
+          git config --global user.name "Automatic packaging"
+      - name: Prepare sublime release
+        working-directory: ./current-repo
+        run: |
+          TAGNAME=$(git describe --tags --abbrev=0)
+          cp -r *.md ..
+          cp -r src ..
+          git branch -d package-control-release || echo "No existing branch"
+          git checkout --orphan package-control-release
+          git rm --cached -r .
+          mkdir ../deleted
+          mv * ../deleted/
+          ls
+          cp -r ../*.md .
+          ls
+          cp -r ../src/* ./
+          ls
+          git add .
+          git clone https://github.com/joaotavora/sly.git
+          rm -rf sly/.git
+          git add sly/
+          git commit -m "Create Sublime release for $TAGNAME"
+          git tag "ST-$TAGNAME"
+          git tag
+      - name: Push sublime release
+        uses: actions-js/push@v1.2
+        with:
+          directory: current-repo
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
+          tags: true
+          empty: true
+          branch: package-control-release
+      - name: Install `zip` command # run the run.py to get the latest data
+        run: |
+          sudo apt-get install zip
+      - name: Prepare files for ZIPping
+        working-directory: ./current-repo
+        run: |
+          rm -rf .git
+          rm -rf .github
+          rm -rf .gitignore
+      - name: ZIP files together
+        run: |
+          mv current-repo slyblime
+          zip -r slyblime slyblime/
+      - name: Upload ZIPped package to release
+        uses: svenstaro/upload-release-action@2.2.1
+        with:
+          file: slyblime.zip
+          tag: ${{ github.ref }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          overwrite: true
+          asset_name: slyblime-$tag.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

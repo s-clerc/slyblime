@@ -1,0 +1,129 @@
+[
+    {
+        "caption": "Sly: Apropos for external symbols",
+        "command": "apropos",
+        "args": {
+            "external_only": true
+        }
+    },
+    {
+        "caption": "Sly: Apropos for all symbols",
+        "command": "apropos",
+        "args": {
+            "external_only": false
+        }
+    },
+    {
+        "caption": "Sly: Connect to Slynk",
+        "command": "connect_slynk",
+        "args": {
+            "prompt_connexion": "both"
+        }
+    },
+    {
+        "caption": "Sly: Close current Slynk connexion",
+        "command": "close_session",
+        "args": {
+            "current": true
+        }
+    },
+    {
+        "caption": "Sly: Compilation notes for the current file",
+        "command": "sly_show_notes_view"
+    },
+    {
+        "caption": "Sly: Compile all selections",
+        "command": "sly_compile_selection"
+    },
+    {
+        "caption": "Sly: Load file if compiled",
+        "command": "sly_load_file"
+    },
+    {
+        "caption": "Sly: Clear compilation notes",
+        "command": "sly_remove_note_highlighting"
+    },
+    {
+        "caption": "Sly: inspect",
+        "command": "inspect"
+    },
+    {
+        "caption": "Sly: inspect in new inspector",
+        "command": "inspect",
+        "args": {
+            "not_open": true
+        }
+    },
+    {
+        "caption": "Sly: Assign a Slynk connexion to window",
+        "command": "select_session"
+    },
+    {
+        "caption": "Sly: Close a Slynk connexion",
+        "command": "close_session"
+    },
+    {
+        "caption": "Sly: Open a Lisp REPL (current connexion)",
+        "command": "sly_open_repl"
+    },
+    {
+        "caption": "Sly: Interactive evaluation",
+        "command": "sly_eval"
+    },
+    {
+        "caption": "Sly: Evaluate contents of view",
+        "command": "sly_eval",
+        "args": {
+            "input_source": "buffer"
+        }
+    },
+        {
+        "caption": "Sly: Expand contents of view",
+        "command": "sly_expand",
+        "args": {
+            "input_source": "buffer",
+            "mode": "eval"
+        }
+    },
+    {
+        "caption": "Sly: Describe symbol normally",
+        "command": "sly_describe"
+    },
+    {
+        "caption": "Sly: Describe symbol as function",
+        "command": "sly_describe",
+        "args": {
+            "mode": "function"
+        }
+    },
+    {
+        "caption": "Sly: Open tracer",
+        "command": "sly_open_tracer"
+    },
+        {
+        "caption": "Sly: Toggle function tracing",
+        "command": "sly_trace"
+    },
+    {
+        "caption": "Sly: Find references to symbol",
+        "command": "sly_reference"
+    },
+    {
+        "caption": "Sly: Upgrade SublimeREPL to work with Sly",
+        "command": "sly_upgrade_sublime_repl"
+    },
+    {
+        "caption": "Sly: Downgrade SublimeREPL to the original version of Python",
+        "command": "sly_downgrade_sublime_repl"
+    },
+    {
+        "caption": "Sly: Start and connect to an inferior Lisp instance",
+        "command": "sly_start_lisp"
+    },
+    {   "caption": "Sly: Path to the bundled copy of Slynk",
+        "command": "sly_show_slynk_starter_url"
+    },
+    {   "caption": "Sly: Close orphaned inferior lisp instances",
+        "command": "sly_close_process"
+    }
+]
