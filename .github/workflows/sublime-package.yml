@@ -33,7 +33,7 @@ jobs:
           ls
           cp -r ../*.md .
           ls
-          cp -r ../src/* ./
+          cp -r ../src ./
           ls
           git add .
           git clone https://github.com/joaotavora/sly.git
