@@ -58,6 +58,9 @@ After that run `Sly: Start and connect to an inferior Lisp instance` to start a 
 To connect to a Slynk instance run `Sly: Connect to slynk` using the command palette.
 Make sure to use the included `Lisp+` syntax for all the features to work correctly.
 
+## Developping
+
+The recommended way to develop is to clone this repo somewhere, then symlink the `src` folder to the Sublime packages folder and symlink the `sly` submodule folder into the `src` folder. While this may seem convolouted, this allows almost all files to remain toplevel in the package folder which means that Sublime Text will reload them upon modification, speeding up editing speed.
 
 ## Copying
 
