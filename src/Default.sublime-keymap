@@ -1,0 +1,34 @@
+[
+	{ "keys": ["shift+enter"], "command": "repl_newline", "args": {},
+	"context":
+		[
+			{ "key": "setting.repl", "operator": "equal", "operand": true },
+			{ "key": "auto_complete_visible", "operator": "equal", "operand": false }
+		]
+	},
+	{ "keys": ["shift+enter"], "command": "repl_newline", "args": {},
+	"context":
+		[
+			{ "key": "setting.repl", "operator": "equal", "operand": true },
+			{ "key": "setting.auto_complete_commit_on_tab", "operand": true }
+		]
+	},
+	{ "keys": ["primary+enter"], "command": "repl_enter", "args": {"forced": true},
+	"context":
+		[
+			{ "key": "setting.repl", "operator": "equal", "operand": true },
+			{ "key": "auto_complete_visible", "operator": "equal", "operand": false }
+		]
+	},
+	{ "keys": ["primary+enter"], "command": "repl_enter", "args": {"forced": true},
+	"context":
+		[
+			{ "key": "setting.repl", "operator": "equal", "operand": true },
+			{ "key": "setting.auto_complete_commit_on_tab", "operand": true }
+		]
+	},
+	{ "keys": ["primary+'"], "command": "sly_compile_top_level", "args": {},
+	  "context":[]
+	},
+]
+

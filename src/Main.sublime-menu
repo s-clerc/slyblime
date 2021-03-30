@@ -1,0 +1,226 @@
+[
+    {
+        "caption": "Preferences",
+        "mnemonic": "n",
+        "id": "preferences",
+        "children":
+        [
+            {
+                "caption": "Package Settings",
+                "mnemonic": "P",
+                "id": "package-settings",
+                "children":
+                [
+                    {
+                        "caption": "Slyblime",
+                        "children":
+                        [       
+                            {   
+                                "caption": "Sly: Path to the bundled copy of Slynk",
+                                "command": "sly_show_slynk_starter_url"
+                            },
+                            {
+                                "caption": "Upgrade SublimeREPL to work with Sly",
+                                "command": "sly_upgrade_sublime_repl"
+                            },
+                            {
+                                "caption": "Downgrade SublimeREPL to the original version of Python",
+                                "command": "sly_downgrade_sublime_repl"
+                            }, 
+                            {"caption": "-"},
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/Slyblime/sly.sublime-settings"
+                                },
+                                "caption": "Settings – Default"
+                            },
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/User/sly.sublime-settings"
+                                },
+                                "caption": "Settings – User"
+                            },
+                            { "caption": "-" },
+                            {
+                                "command": "open_file", "args":
+                                {
+                                    "file": "${packages}/Slyblime/sly.sublime-keymap"
+                                },
+                                "caption": "Keybindings – Default"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (OSX).sublime-keymap",
+                                    "platform": "OSX"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (Linux).sublime-keymap",
+                                    "platform": "Linux"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            {
+                                "command": "open_file",
+                                "args": {
+                                    "file": "${packages}/User/Default (Windows).sublime-keymap",
+                                    "platform": "Windows"
+                                },
+                                "caption": "Key Bindings – User"
+                            },
+                            { "caption": "-" },
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "caption": "Sly",
+        "id": "sly",
+        "children": [
+            {
+                "caption": "Open an inferior Lisp REPL…",
+                "command": "sly_open_repl"
+            },
+            {
+                "caption": "Connexion",
+                "id": "sly_connexion",
+                "children": [
+                    {
+                        "caption": "Connect to Slynk…",
+                        "command": "connect_slynk",
+                        "args": {
+                            "prompt_connexion": "both"
+                        }
+                    },
+                    {
+                        "caption": "Close a Slynk connexion…",
+                        "command": "close_session"
+                    },
+                    {
+                        "caption": "Assign a Slynk connexion to window…",
+                        "command": "select_session"
+                    },    
+                ],
+            }, 
+            {
+                "caption": "Tracing",
+                "children": [
+                    {
+                        "caption": "Open tracer",
+                        "command": "sly_open_tracer"
+                    },
+                    {
+                        "caption": "Toggle function tracing",
+                        "command": "sly_trace"
+                    },
+                ]
+            },
+            {
+                "caption": "Compilation and Evaluation…",
+                "children": [
+                    {
+                        "caption": "Compilation notes for the current file",
+                        "command": "sly_show_notes_view"
+                    },
+                    {
+                        "caption": "Compile and load file ignoring errors",
+                        "command": "sly_compile_file",
+                        "args": {
+                            "load": "always"
+                        }
+                    },
+                    {
+                        "caption": "Compile all selections",
+                        "command": "sly_compile_selection"
+                    },
+                    {
+                        "caption": "Load file if compiled",
+                        "command": "sly_load_file"
+                    },
+                    {
+                        "caption": "Clear compilation notes",
+                        "command": "sly_remove_note_highlighting"
+                    },
+                    {
+                        "caption": "Interactive evaluation…",
+                        "command": "sly_eval"
+                    },
+                    {
+                        "caption": "Evaluate contents of view",
+                        "command": "sly_eval",
+                        "args": {
+                            "input_source": "buffer"
+                        }
+                    }
+                ]
+            },
+            {   "caption": "Inspection",
+                "children": [
+                    {
+                        "caption": "Inspect…",
+                        "command": "inspect"
+                    },
+                    {
+                        "caption": "Inspect in new inspector…",
+                        "command": "inspect",
+                        "args": {
+                            "not_open": true
+                        }
+                    },      
+                ]
+            },
+            {
+                "caption": "Information",
+                "children": [
+                    {
+                        "caption": "Apropos for external symbols…",
+                        "command": "apropos",
+                        "args": {
+                            "external_only": true
+                        }
+                    },
+                    {
+                        "caption": "Apropos for all symbols…",
+                        "command": "apropos",
+                        "args": {
+                            "external_only": false
+                        }
+                    },
+                    {"caption": "-"},
+                    {
+                        "caption": "Describe symbol normally…",
+                        "command": "sly_describe"
+                    },
+                    {
+                        "caption": "Describe symbol as function…",
+                        "command": "sly_describe",
+                        "args": {
+                            "mode": "function"
+                        }
+                    },
+                    {
+                        "caption": "Find references to symbol…",
+                        "command": "sly_reference"
+                    },
+                    {"caption": "-"},
+                    {
+                        "caption": "Expand-1 contents of view",
+                        "command": "sly_expand",
+                        "args": {
+                            "input_source": "buffer",
+                            "recursively": false
+                        }
+                    }
+                ]
+            },
+        ]
+    }
+]

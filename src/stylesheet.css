@@ -1,0 +1,95 @@
+.sly-inspector {
+    margin: 20px;
+    font-size: 1.1rem;
+    text-indent: -3em;
+} 
+.sly a {
+    text-decoration: none;
+    color: var(--accent);
+}
+
+/* Buttons */
+
+
+.sly.button a {
+    background-color: var(--accent);
+    color: color(var(--background) min-contrast(var(--foreground) 4.5));
+    padding: 0.15rem;
+    border-radius: 5px;
+}
+
+.sly.button.preferred a {
+    background-color: var(--greenish);
+    font-weight: bold;
+}
+
+/* Checkboxes */
+.sly.checkbox {
+    border-radius: 5px;
+    background-color: var(--cyanish);
+    color: var(--background);
+    min-width: 1rem;
+    min-height: 1rem;
+    padding: 0 0.3rem;
+}
+
+.sly.checkbox.checked {
+    background-color: var(--orangish);
+}
+
+/* Debugger */
+.sly-debugger ol {
+    line-height: 2;
+}
+.sly-debugger span {
+    line-height: 1.5;
+}
+/* Inspector */
+.sly-inspector nav {
+    font-size: 1.3rem;
+    min-width: 100%;
+}
+
+.sly-inspector nav a {
+    color: var(--foreground);
+    padding: 0 0.5rem;
+}
+.browser-button {
+    font-size: 1.5rem;
+}
+#browser-input {
+    padding-left: 5px;
+    text-decoration: none;
+}
+
+.sly-inspector main {
+    line-height: 1.7;
+}
+
+.sly-inspector-field {
+
+}
+
+.sly-inspector-label {
+    font-style: italic;
+}
+
+.sly .title {
+    font-size: 1.3rem;
+}
+
+.sly .toolbar {
+    margin: 1rem;
+}
+
+.sly .icon-button {
+    font-size: 1.5rem;
+}
+
+.sly .list-element {
+    margin-left:  3rem;
+}
+
+.sly .function-name {
+    font-size: 1.1rem;
+}

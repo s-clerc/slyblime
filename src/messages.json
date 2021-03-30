@@ -1,0 +1,5 @@
+{
+	"install": "messages/install.md",
+	"0.2.0": "messages/0.2.0.md",
+	"0.3.0": "messages/0.2.0.md"
+}
