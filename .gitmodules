@@ -1,0 +1,3 @@
+[submodule "sly"]
+	path = sly
+	url = https://github.com/joaotavora/sly.git

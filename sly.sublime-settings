@@ -1,0 +1,151 @@
+{ "autoset_slynk_connexion": true,
+  "maximum_timeout": 0.2,
+  "line_offset": 1,
+  "inferior_lisp_process": {
+    "command": ["lisp"],
+    "autoclose": true,
+    "loading_time": 2,
+    "setup_time": 1
+  },
+  "default_connexion_parameters": {
+    "hostname": "localhost",
+    "port": 4005
+  },
+  "debug": true,
+  "repl": {
+    "settings_not_to_copy": [
+      "color_scheme"
+    ],
+    "prompt": "⟩ ",
+    "error": [" ｢", "｣"],
+    "syntax": "Packages/slyblime/Lisp.sublime-syntax",
+    "view_title_affixes": ["🖵 sly ", ""],
+    "value_prefix": "⟹ ",
+    "avoid_double_newline": true,
+    "backtracking": {
+      "affixes" : ["<span style='padding-right:2px;'>【</span>",
+                   "<span style='padding-left:1px;padding-right:1px;'>:</span>", 
+                   "<span style='padding-left:2px;'>】</span>"],
+      "valid_region": {
+        "scope": "region.bluish",
+        "flags": [
+          "draw_no_outline",
+          "draw_no_fill",
+          "draw_solid_underline"
+        ]
+      },
+      "invalid_region": {
+        "scope": "region.redish",
+        "flags": [
+          "draw_no_outline",
+          "draw_no_fill",
+          "draw_squiggly_underline"
+        ]
+      }
+    }
+  },
+  "apropos": {
+    "max_width": 60
+  },
+  "debugger": {
+    "header_affixes": [ "⎉ Debugger level ",""],
+    "view_title_affixes": ["⎉ ", ""]
+  },
+  "completion": {
+    "classifiers": [
+      { "name": "Common Lisp",
+        "syntax_regex": "(?i)lisp",
+        "symbol_for_homonyms": "…",
+        "separator": " ",
+        "classifications": [
+          {
+            "regex": "fn",
+            "kind": "KIND_ID_FUNCTION",
+            "symbol":"ƒ"
+          },
+          {
+            "regex": "generic-fn",
+            "kind": "KIND_ID_FUNCTION",
+            "symbol": "g"
+          },
+          {
+            "regex": "var",
+            "kind": "KIND_ID_VARIABLE"
+          },
+          {
+            "regex": "type",
+            "kind": "KIND_ID_TYPE"
+          },
+          {
+            "regex": "pak",
+            "kind": "KIND_ID_NAMESPACE"
+          },
+          {
+            "regex": "cla",
+            "kind": "KIND_ID_TYPE",
+            "short_box": true
+          },
+          {
+            "regex": "macro",
+            "kind": "KIND_ID_KEYWORD",
+            "symbol": "⎈",
+            "short_box": true
+          },
+          {
+            "regex": "special-op",
+            "kind": "KIND_ID_KEYWORD",
+            "symbol": "⎇",
+            "long_symbol": true
+          },
+          { "regex": ".*",
+            "kind": "KIND_ID_AMBIGUOUS",
+            "long_symbol": true
+          }
+        ]
+      }
+    ]
+  },
+  "compilation": {
+    "max_search_iterations": 100,
+    "syntax_regex" : "(?i)lisp",
+    "notes_view": {
+      "header_affixes": ["¡", "!"],
+      "view_title_affixes": ["¡ ", "!"],
+      "always_reopen_file": false,
+      "snippet_location_adjust": -2,
+      "prefer_integrated_notes": true,
+      "annotations": true,
+      "note_regions": {
+        "highlight_scope": "region.redish",
+        "dimensions": [1000, 1000],
+        "strip_regions": true,
+        "ignore_snippet_after_\n": true,
+        "enable_hover": true,
+      },
+    },
+    "annotation_groups": [
+        {"matches": "(?i).*(style-warning)+",
+         "highlight_scope": "",
+         "icon": "dot",
+         "annotation_color": "#9999FF",
+         "prefix": "[i] "},
+          {"matches": "(?i).*(warning)+",
+         "highlight_scope": "region.yellowish",
+         "icon": "dot",
+         "annotation_color": "#FFFF00",
+         "prefix": "⚠︎ "},
+        {"matches": ".*",
+         "highlight_scope": "region.redish",
+         "icon": "circle",
+         "prefix":"• "}
+      ]
+  },
+  "highlighting": {
+    "duration": 2,
+    "form_scope": "region.bluish",
+    "package_scope": "region.greenish",
+  },
+  "inspector": {
+    "fixed_spacing": 2
+  }
+}

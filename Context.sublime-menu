@@ -1,0 +1,161 @@
+[
+  {
+    "caption": "Sly",
+    "id": "Sly",
+    "children": [
+      {
+        "caption": "Compile selection nearest to cursor",
+        "command": "sly_compile_selection"
+      },
+      {
+        "caption": "Compile top-level at cursor",
+        "command": "sly_compile_top_level"
+      },
+      {
+        "caption": "Evaluate selection nearest to cursor",
+        "command": "sly_eval_region"
+      },
+      {
+        "caption": "Evaluate form at cursor",
+        "command": "sly_eval_region",
+        "args": {
+          "input_source": "form"
+        }
+      },
+      {
+        "caption": "Expand",
+        "children": [
+          {
+            "caption": "Expand-1 selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "recursively": false
+            }
+          },
+          {
+            "caption": "Expand-1 form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "input_source": "form",
+              "recursively": false
+            }
+          },
+          {"caption": "-"},
+          {
+            "caption": "Expand selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "recursively": true
+            }
+          },
+          {
+            "caption": "Expand form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "input_source": "form",
+              "recursively": true
+            }
+          },
+        ]
+      },
+      {
+        "caption": "Macroëxpand",
+        "children": [
+          {
+            "caption": "Macroëxpand-1 selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "recursively": false
+            }
+          },
+          {
+            "caption": "Macroëxpand-1 form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "input_source": "form",
+              "recursively": false
+            }
+          },
+          {"caption": "-"},
+          {
+            "caption": "Macroëxpand selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "recursively": true
+            }
+          },
+          {
+            "caption": "Macroëxpand form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "input_source": "form",
+              "recursively": true
+            }
+          },
+          {"caption": "-"},
+          {
+            "caption": "Macroëxpand-all selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "recursively": "all"
+            }
+          },
+          {
+            "caption": "Macroëxpand-all form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "compiler_macros": false,
+              "input_source": "form",
+              "recursively": "all"
+            }
+          },
+        ]
+      },
+      {
+        "caption": "Compiler macroëxpand",
+        "children": [
+          {
+            "caption": "Compiler macroëxpand-1 selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "macros": false,
+              "recursively": false
+            }
+          },
+          {
+            "caption": "Compiler macroëxpand-1 form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "macros": false,
+              "input_source": "form",
+              "recursively": false
+            }
+          },
+          {"caption": "-"},
+          {
+            "caption": "Compiler macroëxpand selection nearest to cursor",
+            "command": "sly_expand",
+            "args": {
+              "macros": false,
+              "recursively": true
+            }
+          },
+          {
+            "caption": "Compiler macroëxpand form at cursor",
+            "command": "sly_expand",
+            "args": {
+              "macros": false,
+              "input_source": "form",
+              "recursively": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
