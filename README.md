@@ -36,7 +36,8 @@ The primary missing feature is the ability to use stickers from Sly.
 ## Installation
 First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
 Use Package Control to install it, or download and unzip this plugin in your packages folder.
-Then to get started just run `Sly: Start and connect to an inferior Lisp instance` in the command palette (you may need to change the default lisp program in the settings).
+Then install SublimeREPL (via Package Control) and then type `Sly: Upgrade SublimeREPL to work with Sly` into the command palette and follow the instructions.
+Finally, to get started just run `Sly: Start and connect to an inferior Lisp instance` in the command palette (you may need to change the default lisp program in the settings).
 
 ## Obligatory animated GIFs section
 Flex Completion
@@ -48,6 +49,7 @@ Backreferences
 ![Backreferences](./docs/animations/backreference.gif)
 
 ## Usage
+Make sure to install SublimeREPL (via Package Control) and then running `Sly: Upgrade SublimeREPL to work with Sly` into the command palette before attempting to use Slyblime!
 
 ### Using an inferior Lisp
 
