@@ -34,9 +34,9 @@ Currently it includes:
 The primary missing feature is the ability to use stickers from Sly.
 
 ## Installation
-First install [SublimeREPL](https://github.com/wuub/SublimeREPL).
-Use Package Control to install it, or download and unzip this plugin in your packages folder.
-Then install SublimeREPL (via Package Control) and then type `Sly: Upgrade SublimeREPL to work with Sly` into the command palette and follow the instructions.
+First install [SublimeREPL](https://github.com/wuub/SublimeREPL) and this plugin.
+Use Package Control to install them, or download and unzip the plugins in your packages folder.
+Then type `Sly: Upgrade SublimeREPL to work with Sly` into the command palette.
 Finally, to get started just run `Sly: Start and connect to an inferior Lisp instance` in the command palette (you may need to change the default lisp program in the settings).
 
 ## Obligatory animated GIFs section
