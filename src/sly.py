@@ -105,8 +105,12 @@ class SlynkSession:
 
     async def on_read_from_minibuffer(self, prompt, initial_value, future):
         initial_value = initial_value if initial_value else ""
-        output = await util.show_input_panel(self.loop, self.window, prompt, initial_value)
-        future.set_result(output)
+        try:
+            output = await util.show_input_panel(self.loop, self.window, prompt, initial_value)
+        except asyncio.CancelledError:
+            future.cancel()
+        else:
+            future.set_result(output)
 
     async def on_y_or_n(self, prompt, future):
         value = yes_no_cancel_dialog(prompt)

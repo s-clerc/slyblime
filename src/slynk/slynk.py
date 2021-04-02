@@ -171,7 +171,10 @@ class SlynkClient(
 
     async def read_from_minibuffer_handler(self, expression):
         thread, tag, prompt, initial_value = extract_question_properties(expression)
-        answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
+        try:
+            answer = await self._futured_emit("read_from_minibuffer", prompt, initial_value)
+        except asyncio.CancelledError:
+            answer = "NIL"
         self.send_message(f"(:EMACS-RETURN {thread} {tag} {dumps(answer)})")
 
     async def y_or_n_handler(self, expression):
