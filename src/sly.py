@@ -296,3 +296,17 @@ if "ready" not in globals():
 else:
     sessions_1 = Sessions(sessions.sessions, sessions.window_assignment)
     sessions = sessions_1
+
+class SlyExitEventListener(sublime_plugin.EventListener):
+    def on_init(self, views):
+        if len(sessions.sessions) != 0:
+            return
+        for view in views:
+            if view.settings().get("sly-open-repl"):
+                print("Found sly open repl")
+                view.settings().set("sly-open-repl", False)
+                view.set_name("🏁" + view.name())
+                view.run_command("repl_insert_text",
+                    {"pos": len(view),
+                     "text": "\n[🏁 Connexion terminated by Sublime Text exit.]"})
+                view.set_status("sly", "❌ " + view.settings().get("sly-repl-status"))

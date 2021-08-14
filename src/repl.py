@@ -56,6 +56,8 @@ class EventBasedReplView(sublimerepl.ReplView):
         self._view.settings().set("sly-session-id", session.id)
         self._view.settings().set("is-sly-repl", True)
         self._view.settings().set("sly-channel-id", self.id)
+        self._view.settings().set("sly-open-repl", True)
+        self._view.settings().set("sly-repl-status", self._view.get_status("sly"))
 
         self.preserved_data = {}
     def play(self):
@@ -140,7 +142,9 @@ class EventBasedReplView(sublimerepl.ReplView):
         super().update_view_loop()
         self.fresh_line()
         self.write("[🏁 Connexion terminated]")
-        self.view.set_status("sly", "❌ " + self._view.get_status("sly"))
+        self._view.set_status("sly", "❌ " + self._view.get_status("sly"))
+        self._view.settings().set("sly-open-repl", False)
+        self._view.settings().set("sly-repl-status", self._view.get_status("sly"))
         self._killed = True
 
     def show_backtrack_phantoms(self, value_region_group_index=None, value_index=None):
