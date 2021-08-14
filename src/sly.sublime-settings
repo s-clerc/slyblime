@@ -146,6 +146,7 @@
     "package_scope": "region.greenish",
   },
   "inspector": {
-    "fixed_spacing": 2
+    "fixed_spacing": 2,
+    "view_title_affixes": ["🛈 ", ""]
   }
 }

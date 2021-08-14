@@ -406,5 +406,9 @@ def port_info(slynk):
     host = slynk.host
     return f"{'⌂' if 'localhost' == host else host}:{slynk.port}"
 
-
+def view_name(slynk, affixes, id):
+    name = slynk.connexion_info.lisp_implementation.name
+    return (affixes[0] + name + " " 
+            + str(id) + " " + port_info(slynk) 
+            + affixes[1])
 

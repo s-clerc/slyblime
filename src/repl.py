@@ -180,11 +180,10 @@ async def create_main_repl(session, window=None):
         session.repl_views[repl.channel.id] = rv
         sublimerepl.manager.repl_views[rv.repl.id] = rv
         view.set_scratch(True)
-        affixes = settings().get("repl")["view_title_affixes"]
-        name = slynk.connexion_info.lisp_implementation.name
-        view.set_name(affixes[0] + name + " " 
-                      + str(repl.channel.id) + " " + util.port_info(slynk) 
-                      + affixes[1])
+        view.set_name(util.view_name(
+                        slynk,
+                        settings().get("repl")["view_title_affixes"],
+                        repl.channel.id))
         return rv
     except Exception as e:
         print("ReplCreationException", e)

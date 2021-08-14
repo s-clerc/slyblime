@@ -179,7 +179,10 @@ class Inspector(ui.UIView):
             asyncio.run_coroutine_threadsafe(
                 self.inspect(query, package), 
                 sly.loop)
-        self.name = "Sly: Inspector"
+        self.name = view_name(
+            self.session.slynk, 
+            sly.settings().get("inspector")["view_title_affixes"],
+            "")
 
     # The main reason `self.html` is not a property is just in case
     # I want to incrementally edit the HTML DOM-style.
