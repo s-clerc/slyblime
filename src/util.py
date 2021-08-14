@@ -145,6 +145,9 @@ def highlight_region (view, region, config, duration=None, *args):
 
 
 def set_status(view, session):
+    if view.settings().get("is-sly-repl"):
+        return
+
     if session:
         slynk = session.slynk
         message = [
@@ -156,7 +159,7 @@ def set_status(view, session):
             str(slynk.port)]
     else:
         message = []
-    view.set_status("slynk", "".join(message))
+    view.set_status("sly", "".join(message))
 
 
 

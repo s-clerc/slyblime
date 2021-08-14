@@ -235,7 +235,7 @@ class Sessions:
                 del self.window_assignment[window_id]
                 try:
                     if view := window.active_view(): 
-                        view.set_status("slynk", "")
+                        view.set_status("sly", "")
                     window.status_message("Slynk session disconnected and unassigned")
                 except Exception as e:
                     print(f"Error with status message: {e}")
