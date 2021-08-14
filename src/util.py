@@ -395,7 +395,9 @@ def symbol_at_point(view, point:int=None, seperated=False) -> Union[List[str], s
             return left_side+right_side
     return None
 
-
+def port_info(slynk):
+    host = slynk.host
+    return f"{'⌂' if 'localhost' == host else host}:{slynk.port}"
 
 
 

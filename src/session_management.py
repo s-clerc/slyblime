@@ -10,7 +10,7 @@ def prepare_preview(session, show_repls=True):
     try: lisp_info = f"{lisp.name} {lisp.version}"
     except: lisp_info = "Error determining name"
 
-    try: port_info = f"{slynk.host}:{slynk.port} on {slynk.connexion_info.machine.instance}"
+    try: port_info = f"{util.port_info(slynk)} on {slynk.connexion_info.machine.instance}"
     except: port_info = "Error determining connexion information"
     # We want to hide this for orphaned processes
     if show_repls:

@@ -19,7 +19,7 @@
     "prompt": "⟩ ",
     "error": [" ｢", "｣"],
     "syntax": "Packages/slyblime/Lisp.sublime-syntax",
-    "view_title_affixes": ["🖵 sly ", ""],
+    "view_title_affixes": ["🖵 ", ""],
     "value_prefix": "⟹ ",
     "avoid_double_newline": true,
     "backtracking": {
