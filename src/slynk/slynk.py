@@ -124,7 +124,7 @@ class SlynkClient(
             self.connexion_info.indentation = parameter
             self.emit("indentation_update", parameter)
         else:
-            print("Danger, unknown command: " + command)
+            print("Danger, unknown command: " + expression)
 
     def make_channel(self):
         id = len(self.channels)
