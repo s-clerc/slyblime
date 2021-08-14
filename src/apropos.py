@@ -94,7 +94,7 @@ def process_arguments(arglist):
     return result
 
 def generate_previews(apropos):
-    content = [["Open as view", f"Not yet implemented {len(apropos)} symbols."]]
+    content = []
     max_lines = 1
     for apropo in apropos:
         entry = generate_preview(apropo)
