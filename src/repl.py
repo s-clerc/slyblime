@@ -133,7 +133,15 @@ class EventBasedReplView(sublimerepl.ReplView):
     def on_server_side_repl_close(self, *data):
         # TODO set _killed to True if the connexion is lost but
         # server_side_repl_close doesn't occur
+        self.closed(*data)
+
+    def closed(self, *data):
+        self._view.set_name("🏁" + self._view.name())
         super().update_view_loop()
+        self.fresh_line()
+        self.write("[🏁 Connexion terminated]")
+        self.view.set_status("sly", "❌ " + self._view.get_status("sly"))
+        self._killed = True
 
     def show_backtrack_phantoms(self, value_region_group_index=None, value_index=None):
         if value_index is not None and value_region_group_index is not None:

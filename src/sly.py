@@ -78,6 +78,8 @@ class SlynkSession:
                 sessions.orphaned_inferior_lisps.append(self)
         elif self.process:
             sessions.orphaned_inferior_lisps.append(self)
+        for repl_view in self.repl_views.values():
+            repl_view.closed()
 
 
     async def on_debug_setup(self, data):
