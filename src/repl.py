@@ -23,7 +23,7 @@ def prepare_backtrack_phantom(region, regions_index, value_index):
 
 class ReplWrapper(repl.Repl):
     def __init__(self, slynk_repl):
-        super().__init__("utf-8")
+        super().__init__("utf-8", "lisp")
         self.slynk_repl = slynk_repl
         self._killed = False
 
