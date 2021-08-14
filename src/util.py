@@ -322,7 +322,7 @@ def symbol_at_point(view, point:int=None, seperated=False) -> Union[List[str], s
         scope = view.extract_scope(point)
         left_side = view.substr(Region(scope.begin(), point))
         right_side = view.substr(Region(point, scope.end()))
-        if right_side[-1:] == "\n":
+        if right_side[-1:] in ["\n", "\x00"]:
             right_side = right_side[-1]
 
         if seperated:
@@ -392,7 +392,11 @@ def symbol_at_point(view, point:int=None, seperated=False) -> Union[List[str], s
                     right_can_escape = False
     
         if is_left_at_end and is_right_at_end:
-            print(__)
+            # Strip null characters which can appear at the start or end if we accidentally go too much
+            if left_side[0:] == "\x00":
+                left_side = left_side[1:]
+            if right_side[-1:] == "\x00":
+                right_side = right_side[:-1]
             if seperated:
                 return [left_side, right_side]
             return left_side+right_side
