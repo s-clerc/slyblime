@@ -58,11 +58,11 @@ class SlynkSession:
         self.window.status_message(f"Attempting to connect to Slynk at {slynk.host}:{slynk.port} [≈ 1 min]")
         await slynk.connect(loop)
         await slynk.prepare(f"{packages_path()}/{__name__.split('.')[0]}")
+        self.filename_translator = await filename_translation.get_translator(self.window, self)
         set_timeout(
             lambda: self.window.run_command("sly_create_repl"),
             10)
 
-        self.filename_translator = await filename_translation.get_translator(self.window, self)
         #await slynk.closed()
 
     def on_connect(self, *args):

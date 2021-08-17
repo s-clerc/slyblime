@@ -23,6 +23,8 @@ class PathnameTranslator():
 
 
 class SimpleTranslator(PathnameTranslator):
+    local_stem = None
+    remote_stem = None
     def local_to_remote(self, pathname):
         return os.path.join(self.remote_stem, os.path.relpath(pathname, self.local_stem))
 
