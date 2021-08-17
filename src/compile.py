@@ -114,12 +114,14 @@ class SlyCompileFileCommand(sublime_plugin.WindowCommand):
         path = self.window.active_view().file_name()
         erase_notes(self.window.active_view())
         asyncio.run_coroutine_threadsafe(
-            compile_file(self.window, session, path, basename(path), load),
+            compile_file(self.window, session, path, load),
             loop)
 
-async def compile_file(window, session, path, name, load):
+async def compile_file(window, session, path, load):
     try:
-        result = await session.slynk.compile_file(path, load)
+        result = await session.slynk.compile_file(
+            session.filename_translator.local_to_remote(path),
+            load)
     except Exception as e:
         print(e)
     print(result)
@@ -129,7 +131,9 @@ async def compile_file(window, session, path, name, load):
 async def handle_compilation_results(window, path, result, load=None):
     if type(result) == list:
         return
+    result.translator = sessions.get_by_window(window).filename_translator
     compilation_results[str(path)] = result
+
     try:
         if not result.success:
             if result.load == True: 
@@ -176,7 +180,7 @@ def show_notes_view(window, path, name, result):
                 f'<h1>{escape(affixes[0] + str(name) + affixes[1])}</h1>')
         for index, note in enumerate(result.notes):
             location = note.location
-            path = escape(location["file"])
+            path = escape(result.translator.remote_to_local(location["file"]))
             position = escape(str(location["position"]))
             severity = escape(str(note.severity)[1:].capitalize())
             html += (f'<h2>{severity}: {escape(note.message)} </h2>'
@@ -201,7 +205,7 @@ class SlyCompilationErrorUrlCommand(sublime_plugin.WindowCommand):
             result = compilation_results[path]
             location = result.notes[int(index)].location
             point = location["position"]
-            path = location["file"]
+            path = result.translator.remote_to_local(location["file"])
             view = util.open_file_at(self.window, path, point, config["always_reopen_file"])
             snippet_region = find_snippet_region(view, location.get("snippet", ""), point)
             util.highlight_region(

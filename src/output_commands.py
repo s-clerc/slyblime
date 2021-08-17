@@ -209,7 +209,7 @@ class SlyReferenceCommand(sublime_plugin.TextCommand):
         phantoms = []
         for reference in all_references:
             region = results.find("\x1F", start)
-            file_name = escape(reference[1].file)
+            file_name = escape(session.filename_translator.remote_to_local(reference[1].file))
             phantoms.append(Phantom(
                 region, 
                 f'"<a href="{reference[1].position.offset} {file_name}">{file_name}</a>"', 

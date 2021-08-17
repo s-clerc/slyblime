@@ -3,7 +3,7 @@ import sublime_plugin, threading, asyncio  # import the required modules
 
 from operator import itemgetter
 
-from . import util, sexpdata, debugger
+from . import util, sexpdata, debugger, filename_translation
 from .debugger import Debugger
 from .slynk import slynk
 from .tracer import Tracer
@@ -51,6 +51,7 @@ class SlynkSession:
         self.id: SessionId = None
         self.autoclose = False
         self.process = None
+        self.filename_translator = filename_translation.IdentityTranslator()
 
     async def connect(self):
         slynk = self.slynk
@@ -60,6 +61,8 @@ class SlynkSession:
         set_timeout(
             lambda: self.window.run_command("sly_create_repl"),
             10)
+
+        self.filename_translator = await filename_translation.get_translator(self.window, self)
         #await slynk.closed()
 
     def on_connect(self, *args):

@@ -125,5 +125,8 @@
     },
     {   "caption": "Sly: Close orphaned inferior lisp instances",
         "command": "sly_close_process"
+    },
+    {   "caption": "Sly: Change pathname translator",
+        "command": "sly_change_filename_translator"
     }
 ]
