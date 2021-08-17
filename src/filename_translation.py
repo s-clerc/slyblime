@@ -8,13 +8,13 @@ from typing import *
 translators = []
 
 class PathnameTranslator():
-    def is_active(self, session):
+    def is_active(self, session: SlynkSession) -> bool:
         raise NotImplementedError()
 
-    def local_to_remote(self, pathname):
+    def local_to_remote(self, pathname: str) -> str:
         raise NotImplementedError()
 
-    def remote_to_local(self, pathname):
+    def remote_to_local(self, pathname: str) -> str:
         raise NotImplementedError()
 
     @property
@@ -23,8 +23,8 @@ class PathnameTranslator():
 
 
 class SimpleTranslator(PathnameTranslator):
-    local_stem = None
-    remote_stem = None
+    local_stem:str = None
+    remote_stem:str = None
     def local_to_remote(self, pathname):
         return os.path.join(self.remote_stem, os.path.relpath(pathname, self.local_stem))
 
@@ -67,26 +67,24 @@ def get_translators():
                     translators.append(value())
             except:
                 pass
-    print(translators)
     return translators
 
 
 async def get_translator(window, session, show_change_messages=False):
     try:
         get_translators()
+        active_translators = []
         for translator in translators:
-            print(translator)
             try:
-                translator.is_active(session)
-            except Exception as e:
-                print(f"32 {e} ..")
-        active_translators = [translator for translator in translators
-                                         if translator.is_active(session)]
+                if translator.is_active(session):
+                    active_translators.append(translator)
+            except Exception:
+                pass
+
         if len(active_translators) < 2: # Only the identity
             if show_change_messages:
                 window.status_message("No other pathname translators avaliable")
             return active_translators[0]
-        print("OK")
         def on_highlighted(index):
             window.status_message(f"Internal name: {active_translators[index].__class__}")
 
@@ -99,7 +97,7 @@ async def get_translator(window, session, show_change_messages=False):
 
         return active_translators[index]
     except Exception as e:
-        print(f"E: {e}")
+        print(f"TranslatorSelectionError: {e}")
         window.status_message("Error selecting translator, identity pathname translator will be used.")
         return IdentityTranslator()
 

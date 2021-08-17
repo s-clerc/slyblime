@@ -60,6 +60,27 @@ After that run `Sly: Start and connect to an inferior Lisp instance` to start a 
 To connect to a Slynk instance run `Sly: Connect to slynk` using the command palette.
 Make sure to use the included `Lisp+` syntax for all the features to work correctly.
 
+#### Pathname translation
+
+To use pathname translation, create file `Sublime Text/Packages/User/slyblime/filename_translators.py`.
+Then at the top add `from slyblime.filename_translation import *`.
+A pathname translator is any class definition which extends the (`slyblime.filename_translation.`)`PathnameTranslator` abstract class as follows:
+```python
+class PathnameTranslator():
+    # Tells Slyblime if the translator should be offered for the current connexion
+    def is_active(self, session: SlynkSession) -> bool
+    def local_to_remote(self, pathname: str) -> str
+    def remote_to_local(self, pathname: str) -> str
+    # A two line description of the translator for the selection menu
+    description: Tuple[str, str]
+``` For most cases, it is preferable to use extend the (`slyblime.filename_translation.`)`SimpleTranslator` abstract class:
+```python
+class SimpleTranslator(PathnameTranslator):
+    local_stem:str
+    remote_stem:str
+    def is_active(self, session: SlynkSession) -> bool
+``` where a bijection is created such that path "`local_stem`/*A*" ≃ "`remote_stem`/*A*".
+
 ## Developping
 
 The recommended way to develop is to clone this repo somewhere, then symlink the `src` folder to the Sublime packages folder and symlink the `sly` submodule folder into the `src` folder. While this may seem convolouted, this allows almost all files to remain toplevel in the package folder which means that Sublime Text will reload them upon modification, speeding up editing speed.
