@@ -179,12 +179,14 @@ class SlyStartLispCommand(sublime_plugin.WindowCommand):
           session.process = await asyncio.create_subprocess_shell(
               " ".join(params["command"]),
               stdin=asyncio.subprocess.PIPE
-              #, stdout=asyncio.subprocess.PIPE # debug
+              , stdout=asyncio.subprocess.PIPE # debug
+              , stderr=asyncio.subprocess.PIPE
               )
   
           session.process.stdin.write("(print :test)".encode())
+          file_path=packages_path().replace("\\","/")
           session.process.stdin.write( # Hate the trick below btw
-              f"""(load "{packages_path()}/{__name__.split('.')[0]
+              f"""(load "{file_path}/{__name__.split('.')[0]
                   }/sly/slynk/slynk-loader.lisp")""".encode())
           await asyncio.sleep(params["loading_time"])
   
